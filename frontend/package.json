@@ -10,6 +10,12 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@embedpdf/core": "^2.1.2",
+    "@embedpdf/engines": "^2.1.2",
+    "@embedpdf/plugin-document-manager": "^2.1.2",
+    "@embedpdf/plugin-render": "^2.1.2",
+    "@embedpdf/plugin-scroll": "^2.1.2",
+    "@embedpdf/plugin-viewport": "^2.1.2",
     "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-accordion": "^1.2.4",
     "@radix-ui/react-alert-dialog": "^1.1.7",

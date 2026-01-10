@@ -44,13 +44,46 @@ export default function HomePage() {
           <h3 className="mb-8 text-center text-2xl font-semibold text-blue-900">选择您的角色</h3>
           {/* 修改了这里：适应4个卡片的布局 (中屏2列，大屏4列) */}
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-            
+            {/* 3. 新增：游客浏览 (蓝色框) */}
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="text-center">
+
+                <div className="mx-auto mb-4 overflow-hidden h-24 w-24 rounded-full border-2 border-blue-100">
+                  <img
+                    src="https://pic4.zhimg.com/v2-efd4f4517d5bdb43858a04f7e4ff5f7f_r.jpg"
+                    alt="游客"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <CardTitle className="text-blue-900">游客访问</CardTitle>
+                <CardDescription className="text-blue-700/80">
+                  无需注册，直接浏览平台职位和公司
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm text-blue-800/80">
+                  <li>• 浏览所有热门兼职</li>
+                  <li>• 查看优质企业信息</li>
+                  <li>• 阅读真实面试评价</li>
+                  <li>• 体验平台功能</li>
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Link to="/visitor/home" className="w-full">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 shadow-sm border border-blue-400/20">
+                    以游客身份浏览 &rarr;
+                  </Button>
+                </Link>
+              </CardFooter>
+            </Card>
+
+
             {/* 1. 学生卡片 */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="text-center">
                 <div className="mx-auto mb-4 overflow-hidden h-24 w-24 rounded-full border-2 border-blue-100">
-                  <img 
-                    src="/1.png" 
+                  <img
+                    src="/1.png"
                     alt="学生用户"
                     className="w-full h-full object-cover"
                   />
@@ -77,8 +110,8 @@ export default function HomePage() {
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="text-center">
                 <div className="mx-auto mb-4 overflow-hidden h-24 w-24 rounded-full border-2 border-blue-100">
-                  <img 
-                    src="/2.png" 
+                  <img
+                    src="/2.png"
                     alt="雇主用户"
                     className="w-full h-full object-cover"
                   />
@@ -103,41 +136,13 @@ export default function HomePage() {
               </CardFooter>
             </Card>
 
-            {/* 3. 新增：游客浏览 (蓝色框) */}
-            <Card className="flex flex-col justify-between border-blue-200 bg-blue-50 transition-all hover:shadow-lg hover:border-blue-300">
-              <CardHeader className="text-center">
-                {/* 使用SVG图标代替图片，无需上传新图片 */}
-                <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 12 2a14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-                </div>
-                <CardTitle className="text-blue-900">游客访问</CardTitle>
-                <CardDescription className="text-blue-700/80">
-                  无需注册，直接浏览平台职位和公司
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-blue-800/80">
-                  <li>• 浏览所有热门兼职</li>
-                  <li>• 查看优质企业信息</li>
-                  <li>• 阅读真实面试评价</li>
-                  <li>• 体验平台功能</li>
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <Link to="/visitor/home" className="w-full">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 shadow-sm border border-blue-400/20">
-                    以游客身份浏览 &rarr;
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
 
             {/* 4. 管理员卡片 */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="text-center">
                 <div className="mx-auto mb-4 overflow-hidden h-24 w-24 rounded-full border-2 border-blue-100">
-                  <img 
-                    src="/3.png" 
+                  <img
+                    src="/3.png"
                     alt="管理员"
                     className="w-full h-full object-cover"
                   />
@@ -232,8 +237,8 @@ export default function HomePage() {
             ].map((job) => (
               <Card key={job.id} className="overflow-hidden p-0">
                 <div className="w-full">
-                  <img 
-                    src={job.imageUrl} 
+                  <img
+                    src={job.imageUrl}
                     alt={job.title}
                     className="h-48 w-full object-cover"
                   />

@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { EyeIcon, SearchIcon, DownloadIcon, Trash2Icon } from "lucide-react";
+import { EyeIcon, SearchIcon, DownloadIcon, Trash2Icon, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import resumeService, { Resume } from "@/services/resumeService";
+import { PDFPreview } from "@/components/PDFPreview";
 
 export default function ResumeManagement() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -11,6 +12,8 @@ export default function ResumeManagement() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
+  const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
 
   // Fetch all resumes on component mount
   useEffect(() => {
@@ -53,10 +56,17 @@ export default function ResumeManagement() {
     try {
       setErrorMessage(null);
       const resume = await resumeService.getResumeById(id);
-      // You can implement a modal to show resume details
+      
+      // Check if the resume has a fileUrl or filePath
+      if (resume.fileUrl || resume.resumeFilePath) {
+        setSelectedResume(resume);
+        setShowPDFPreview(true);
+      } else {
+        setSuccessMessage("该简历没有PDF文件");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+      
       console.log("Resume details:", resume);
-      setSuccessMessage(`查看简历 ID: ${id}`);
-      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error: any) {
       console.error("Failed to view resume:", error);
       setErrorMessage(error.response?.data?.message || "无法查看简历");
@@ -318,6 +328,32 @@ export default function ResumeManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* --- PDF预览模态框 --- */}
+      {showPDFPreview && selectedResume && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-6xl h-full max-h-[90vh] bg-white rounded-lg shadow-lg p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">
+                简历预览 - {selectedResume.student?.fullName} 
+                {selectedResume.title && ` (${selectedResume.title})`}
+              </h3>
+              <button 
+                onClick={() => setShowPDFPreview(false)} 
+                className="text-gray-500 hover:text-black p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="h-[calc(90vh-120px)]">
+              <PDFPreview 
+                fileUrl={selectedResume.fileUrl || selectedResume.resumeFilePath || ''} 
+                className="h-full w-full"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, UploadIcon, EditIcon, PlusIcon, BriefcaseIcon, GraduationCapIcon, Loader2, X } from "lucide-react";
+import { Download, UploadIcon, EditIcon, PlusIcon, BriefcaseIcon, GraduationCapIcon, Loader2, X, Eye } from "lucide-react";
 import authService from "@/services/authService";
+import { PDFPreview } from "@/components/PDFPreview";
 
 // --- 定义接口类型 (根据你的后端实体) ---
 interface Education {
@@ -46,6 +47,7 @@ export default function Resume() {
   // --- 状态管理 ---
   const [resume, setResume] = useState<ResumeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
 
   // 工作经历模态框状态
   const [isWorkModalOpen, setIsWorkModalOpen] = useState(false);
@@ -245,41 +247,52 @@ export default function Resume() {
               <CardTitle>个人简历</CardTitle>
               <CardDescription>完整的简历可以提高您被录用的机会</CardDescription>
             </div>
-            <div className="flex gap-2">
-              {!isEditing ? (
-                <>
-                  {/* 隐藏的文件输入框 */}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleFileUpload}
-                  />
-                  <Button variant="outline" size="sm" className="gap-1" onClick={() => fileInputRef.current?.click()}>
-                    <UploadIcon className="h-4 w-4" />
-                    上传
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-1" onClick={handleFileDownload}>
-                    <Download className="h-4 w-4" />
-                    下载
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-1" onClick={handleStartEdit}>
-                    <EditIcon className="h-4 w-4" />
-                    编辑
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" size="sm" onClick={handleCancelEdit}>
-                    取消
-                  </Button>
-                  <Button size="sm" onClick={handleSaveEdit}>
-                    保存
-                  </Button>
-                </>
-              )}
-            </div>
+<div className="flex gap-2">
+                {!isEditing ? (
+                  <>
+                    {/* 隐藏的文件输入框 */}
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileUpload}
+                    />
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => fileInputRef.current?.click()}>
+                      <UploadIcon className="h-4 w-4" />
+                      上传
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={handleFileDownload}>
+                      <Download className="h-4 w-4" />
+                      下载
+                    </Button>
+                    {resume.fileUrl && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-1" 
+                        onClick={() => setShowPDFPreview(true)}
+                      >
+                        <Eye className="h-4 w-4" />
+                        预览
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" className="gap-1" onClick={handleStartEdit}>
+                      <EditIcon className="h-4 w-4" />
+                      编辑
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                      取消
+                    </Button>
+                    <Button size="sm" onClick={handleSaveEdit}>
+                      保存
+                    </Button>
+                  </>
+                )}
+              </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -531,6 +544,29 @@ export default function Resume() {
                 <Button type="submit">保存</Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- PDF预览模态框 --- */}
+      {showPDFPreview && resume?.fileUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-6xl h-full max-h-[90vh] bg-white rounded-lg shadow-lg p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">PDF预览 - {resume.student?.fullName}</h3>
+              <button 
+                onClick={() => setShowPDFPreview(false)} 
+                className="text-gray-500 hover:text-black p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="h-[calc(90vh-120px)]">
+              <PDFPreview 
+                fileUrl={resume.fileUrl} 
+                className="h-full w-full"
+              />
+            </div>
           </div>
         </div>
       )}
