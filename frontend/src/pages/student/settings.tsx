@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import authService from "@/services/authService";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -62,8 +63,8 @@ export default function Settings() {
           skills: userData.skills || ""
         });
       } catch (error) {
-        console.error("获取用户数据失败:", error);
-        alert("获取用户数据失败");
+        console.error('获取用户数据失败:', error);
+        toast.error("获取用户数据失败");
       } finally {
         setLoading(false);
       }
@@ -81,10 +82,10 @@ export default function Settings() {
       await axios.put(`http://localhost:8080/api/users/${userId}`, profileData, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      alert("保存成功！");
+      toast.success("保存成功！");
     } catch (error) {
-      console.error("保存失败:", error);
-      alert("保存失败");
+      console.error('保存失败:', error);
+      toast.error("保存失败");
     } finally {
       setSaving(false);
     }

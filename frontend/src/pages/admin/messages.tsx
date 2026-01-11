@@ -1,6 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   CheckIcon, 
   MessageSquareIcon, 
@@ -16,6 +27,8 @@ export default function MessageManagement() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -85,16 +98,23 @@ export default function MessageManagement() {
     if (!message.id) {
       return;
     }
-    const confirmed = window.confirm("确认删除这条留言吗？");
-    if (!confirmed) {
+    setMessageToDelete(message);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!messageToDelete?.id) {
       return;
     }
     try {
-      await messageService.deleteMessage(message.id);
-      setMessages((prev) => prev.filter((item) => item.id !== message.id));
+      await messageService.deleteMessage(messageToDelete.id);
+      setMessages((prev) => prev.filter((item) => item.id !== messageToDelete.id));
     } catch (error) {
       console.error("Failed to delete message:", error);
       setErrorMessage("删除留言失败，请稍后再试。");
+    } finally {
+      setDeleteDialogOpen(false);
+      setMessageToDelete(null);
     }
   };
 
@@ -114,15 +134,16 @@ export default function MessageManagement() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <select 
-          className="h-10 rounded-md border border-input bg-background px-3 py-1"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">所有状态</option>
-          <option value="read">已读</option>
-          <option value="unread">未读</option>
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">所有状态</SelectItem>
+            <SelectItem value="read">已读</SelectItem>
+            <SelectItem value="unread">未读</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       
       <Card>
@@ -303,6 +324,23 @@ export default function MessageManagement() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除留言</AlertDialogTitle>
+            <AlertDialogDescription>
+              确认删除这条留言吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

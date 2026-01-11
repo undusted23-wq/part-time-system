@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { SendIcon, PaperclipIcon, SearchIcon } from "lucide-react";
 import messageService, { Message } from "@/services/messageService";
 import authService from "@/services/authService";
+import { toast } from "sonner";
 
 interface Conversation {
   userId: number;
@@ -150,7 +151,7 @@ export default function Messages() {
       await loadConversations();
     } catch (error) {
       console.error("Failed to send message:", error);
-      alert("发送失败，请稍后再试。");
+      toast.error("发送失败，请稍后再试。");
     }
   };
 

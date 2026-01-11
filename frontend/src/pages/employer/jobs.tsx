@@ -4,9 +4,21 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { PencilIcon, EyeIcon, Trash2Icon, PlusCircleIcon, SearchIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import jobService, { Job } from "@/services/jobService";
 import applicationService from "@/services/applicationService";
+import { toast } from "sonner";
 
 interface EmployerJob extends Job {
   applicationCount?: number;
@@ -18,6 +30,8 @@ export default function JobsList() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<EmployerJob | null>(null);
 
   const formatJobType = (type?: string) => {
     const typeMap: Record<string, string> = {
@@ -108,9 +122,10 @@ export default function JobsList() {
     try {
       const updated = await jobService.updateJobStatus(job.id, !job.active);
       setJobs((prev) => prev.map((item) => (item.id === job.id ? { ...item, ...updated } : item)));
+      toast.success(job.active ? "职位已下线" : "职位已重新发布");
     } catch (error) {
       console.error("Failed to update job status:", error);
-      alert("更新状态失败，请稍后再试。");
+      toast.error("更新状态失败，请稍后再试。");
     }
   };
 
@@ -118,16 +133,24 @@ export default function JobsList() {
     if (!job.id) {
       return;
     }
-    const confirmed = window.confirm(`确认删除职位 ${job.title} 吗？`);
-    if (!confirmed) {
+    setJobToDelete(job);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!jobToDelete?.id) {
       return;
     }
     try {
-      await jobService.deleteJob(job.id);
-      setJobs((prev) => prev.filter((item) => item.id !== job.id));
+      await jobService.deleteJob(jobToDelete.id);
+      setJobs((prev) => prev.filter((item) => item.id !== jobToDelete.id));
+      toast.success("职位已删除");
     } catch (error) {
       console.error("Failed to delete job:", error);
-      alert("删除失败，请稍后再试。");
+      toast.error("删除失败，请稍后再试。");
+    } finally {
+      setDeleteDialogOpen(false);
+      setJobToDelete(null);
     }
   };
 
@@ -153,15 +176,16 @@ export default function JobsList() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <select
-          className="h-10 rounded-md border border-input px-3 py-1"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">所有状态</option>
-          <option value="active">正在招聘</option>
-          <option value="inactive">已下线</option>
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">所有状态</SelectItem>
+            <SelectItem value="active">正在招聘</SelectItem>
+            <SelectItem value="inactive">已下线</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {loading && (
@@ -256,5 +280,23 @@ export default function JobsList() {
         </Card>
       )}
     </div>
+
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认删除职位</AlertDialogTitle>
+          <AlertDialogDescription>
+            确认删除职位“{jobToDelete?.title}”吗？此操作无法撤销。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+            删除
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </div>
   );
 }

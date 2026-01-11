@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CameraIcon, SaveIcon, UserIcon } from "lucide-react";
 import userService, { UserProfile } from "@/services/userService";
+import { toast } from "sonner";
 
 interface ProfileForm {
   fullName: string;
@@ -68,10 +69,10 @@ export default function StudentProfile() {
         skills: form.skills
       });
       setProfile(updated);
-      alert("保存成功！");
+      toast.success("保存成功！");
     } catch (error) {
       console.error("Failed to update profile:", error);
-      alert("保存失败，请稍后再试。");
+      toast.error("保存失败，请稍后再试。");
     } finally {
       setSaving(false);
     }

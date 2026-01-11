@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   BuildingIcon,
   BriefcaseIcon, 
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useEffect, useMemo, useState } from "react";
 import applicationService, { JobApplication } from "@/services/applicationService";
 import reviewService from "@/services/reviewService";
+import { toast } from "sonner";
 
 export default function WriteReview() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -57,19 +59,19 @@ export default function WriteReview() {
 
   const handleSubmit = async () => {
     if (!selectedApplication?.job?.company?.id) {
-      alert("请选择包含企业信息的职位。");
+      toast.error("请选择包含企业信息的职位。");
       return;
     }
     if (!title.trim()) {
-      alert("请填写评价标题。");
+      toast.error("请填写评价标题。");
       return;
     }
     if (!content.trim()) {
-      alert("请填写评价内容。");
+      toast.error("请填写评价内容。");
       return;
     }
     if (rating <= 0) {
-      alert("请为本次体验评分。");
+      toast.error("请为本次体验评分。");
       return;
     }
 
@@ -87,7 +89,7 @@ export default function WriteReview() {
         companyId: selectedApplication.job.company.id,
         jobId: selectedApplication.job?.id
       });
-      alert("评价提交成功！");
+      toast.success("评价提交成功！");
       setTitle("");
       setContent("");
       setPros("");
@@ -97,7 +99,7 @@ export default function WriteReview() {
       setAnonymous(false);
     } catch (error) {
       console.error("Failed to submit review:", error);
-      alert("提交失败，请稍后再试。");
+      toast.error("提交失败，请稍后再试。");
     } finally {
       setSubmitting(false);
     }
@@ -116,19 +118,22 @@ export default function WriteReview() {
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label>选择已申请的职位</Label>
-            <select
-              className="w-full h-10 rounded-md border border-input bg-background px-3 py-2"
-              value={selectedApplicationId || ""}
-              onChange={(e) => setSelectedApplicationId(Number(e.target.value) || null)}
+            <Select 
+              value={selectedApplicationId?.toString() || ""} 
+              onValueChange={(value) => setSelectedApplicationId(value ? Number(value) : null)}
               disabled={loading}
             >
-              <option value="">请选择</option>
-              {applications.map((application) => (
-                <option key={application.id} value={application.id}>
-                  {application.job?.title || "未知职位"} · {application.job?.company?.name || "未知企业"}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="请选择" />
+              </SelectTrigger>
+              <SelectContent>
+                {applications.map((application) => (
+                  <SelectItem key={application.id} value={application.id?.toString() || ""}>
+                    {application.job?.title || "未知职位"} · {application.job?.company?.name || "未知企业"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
           </div>
 

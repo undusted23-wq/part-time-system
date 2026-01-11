@@ -1,15 +1,28 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ClockIcon, MessageCircleIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import applicationService, { JobApplication } from "@/services/applicationService";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function Applications() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
+  const [applicationToWithdraw, setApplicationToWithdraw] = useState<number | null>(null);
 
   const statusMeta: Record<string, { label: string; className: string }> = {
     PENDING: { label: "已申请", className: "bg-blue-100 text-blue-800 hover:bg-blue-100" },
@@ -44,16 +57,24 @@ export default function Applications() {
     if (!applicationId) {
       return;
     }
-    const confirmed = window.confirm("确认撤回该申请吗？");
-    if (!confirmed) {
+    setApplicationToWithdraw(applicationId);
+    setWithdrawDialogOpen(true);
+  };
+
+  const confirmWithdraw = async () => {
+    if (!applicationToWithdraw) {
       return;
     }
     try {
-      await applicationService.deleteApplication(applicationId);
-      setApplications((prev) => prev.filter((item) => item.id !== applicationId));
+      await applicationService.deleteApplication(applicationToWithdraw);
+      setApplications((prev) => prev.filter((item) => item.id !== applicationToWithdraw));
+      toast.success("申请已成功撤回");
     } catch (error) {
       console.error("Failed to withdraw application:", error);
-      alert("撤回失败，请稍后再试。");
+      toast.error("撤回失败，请稍后再试。");
+    } finally {
+      setWithdrawDialogOpen(false);
+      setApplicationToWithdraw(null);
     }
   };
 
@@ -122,6 +143,21 @@ export default function Applications() {
           );
         })}
       </div>
+
+      <AlertDialog open={withdrawDialogOpen} onOpenChange={setWithdrawDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认撤回申请</AlertDialogTitle>
+            <AlertDialogDescription>
+              确认撤回该申请吗？撤回后您可以重新申请该职位。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmWithdraw}>确认撤回</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

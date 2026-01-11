@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BookmarkIcon, SearchIcon } from "lucide-react";
 import jobService, { Job } from "@/services/jobService";
 import savedJobService from "@/services/savedJobService";
 import applicationService from "@/services/applicationService";
+import { toast } from "sonner";
 
 export default function JobSearch() {
   const [keyword, setKeyword] = useState("");
@@ -89,9 +91,10 @@ export default function JobSearch() {
     try {
       await savedJobService.saveJob(jobId);
       setSavedJobIds((prev) => (prev.includes(jobId) ? prev : [...prev, jobId]));
+      toast.success("收藏成功！");
     } catch (error) {
       console.error("Failed to save job:", error);
-      alert("收藏失败，请稍后再试。");
+      toast.error("收藏失败，请稍后再试。");
     }
   };
 
@@ -102,9 +105,10 @@ export default function JobSearch() {
     try {
       await savedJobService.unsaveJob(jobId);
       setSavedJobIds((prev) => prev.filter((id) => id !== jobId));
+      toast.success("已取消收藏");
     } catch (error) {
       console.error("Failed to unsave job:", error);
-      alert("取消收藏失败，请稍后再试。");
+      toast.error("取消收藏失败，请稍后再试。");
     }
   };
 
@@ -114,10 +118,10 @@ export default function JobSearch() {
     }
     try {
       await applicationService.applyForJob({ jobId });
-      alert("申请已提交！");
+      toast.success("申请已提交！");
     } catch (error) {
       console.error("Failed to apply:", error);
-      alert("申请失败，请稍后再试。");
+      toast.error("申请失败，请稍后再试。");
     }
   };
   
@@ -146,19 +150,20 @@ export default function JobSearch() {
                 />
               </div>
               <div className="flex-1">
-                <select 
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2"
-                  value={jobType}
-                  onChange={(e) => setJobType(e.target.value)}
-                >
-                  <option value="">工作类型</option>
-                  <option value="PART_TIME">兼职</option>
-                  <option value="INTERNSHIP">实习</option>
-                  <option value="FULL_TIME">全职</option>
-                  <option value="TEMPORARY">临时工</option>
-                  <option value="CONTRACT">合同工</option>
-                  <option value="FREELANCE">自由职业</option>
-                </select>
+                <Select value={jobType} onValueChange={setJobType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="工作类型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">所有类型</SelectItem>
+                    <SelectItem value="PART_TIME">兼职</SelectItem>
+                    <SelectItem value="INTERNSHIP">实习</SelectItem>
+                    <SelectItem value="FULL_TIME">全职</SelectItem>
+                    <SelectItem value="TEMPORARY">临时工</SelectItem>
+                    <SelectItem value="CONTRACT">合同工</SelectItem>
+                    <SelectItem value="FREELANCE">自由职业</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Button onClick={handleSearch}>搜索</Button>

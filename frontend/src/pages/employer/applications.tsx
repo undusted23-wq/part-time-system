@@ -3,11 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SearchIcon, CheckIcon, XIcon, MessageSquareIcon, UserIcon, FileTextIcon } from "lucide-react";
 import applicationService, { JobApplication } from "@/services/applicationService";
 import companyService from "@/services/companyService";
 import jobService, { Job } from "@/services/jobService";
 import messageService from "@/services/messageService";
+import { toast } from "sonner";
 
 export default function Applications() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,6 +22,13 @@ export default function Applications() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // Dialog states
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [currentApplication, setCurrentApplication] = useState<JobApplication | null>(null);
+  const [noteInput, setNoteInput] = useState("");
+  const [messageInput, setMessageInput] = useState("");
 
   const statusMeta: Record<string, { label: string; className: string }> = {
     PENDING: { label: "待审核", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
@@ -86,9 +98,10 @@ export default function Applications() {
     try {
       const updated = await applicationService.updateApplicationStatus(application.id, status);
       setApplications((prev) => prev.map((item) => (item.id === application.id ? updated : item)));
+      toast.success("状态更新成功");
     } catch (error) {
       console.error("Failed to update status:", error);
-      alert("更新状态失败，请稍后再试。");
+      toast.error("更新状态失败，请稍后再试。");
     }
   };
 
@@ -96,39 +109,60 @@ export default function Applications() {
     if (!application.id) {
       return;
     }
-    const notes = window.prompt("输入备注", application.employerNotes || "");
-    if (notes === null) {
+    setCurrentApplication(application);
+    setNoteInput(application.employerNotes || "");
+    setNoteDialogOpen(true);
+  };
+
+  const confirmAddNote = async () => {
+    if (!currentApplication?.id) {
       return;
     }
     try {
-      const updated = await applicationService.addEmployerNotes(application.id, notes);
-      setApplications((prev) => prev.map((item) => (item.id === application.id ? updated : item)));
+      const updated = await applicationService.addEmployerNotes(currentApplication.id, noteInput);
+      setApplications((prev) => prev.map((item) => (item.id === currentApplication.id ? updated : item)));
+      toast.success("备注已更新");
+      setNoteDialogOpen(false);
+      setNoteInput("");
+      setCurrentApplication(null);
     } catch (error) {
       console.error("Failed to update notes:", error);
-      alert("更新备注失败，请稍后再试。");
+      toast.error("更新备注失败，请稍后再试。");
     }
   };
 
   const handleMessageApplicant = async (application: JobApplication) => {
     const receiverId = application.applicant?.id;
     if (!receiverId) {
-      alert("无法获取申请人信息。");
+      toast.error("无法获取申请人信息。");
       return;
     }
-    const content = window.prompt("输入要发送的消息");
-    if (!content) {
+    setCurrentApplication(application);
+    setMessageInput("");
+    setMessageDialogOpen(true);
+  };
+
+  const confirmSendMessage = async () => {
+    if (!currentApplication || !messageInput.trim()) {
+      return;
+    }
+    const receiverId = currentApplication.applicant?.id;
+    if (!receiverId) {
       return;
     }
     try {
       await messageService.sendMessage({
         receiverId,
-        subject: application.job?.title || "招聘沟通",
-        content
+        subject: currentApplication.job?.title || "招聘沟通",
+        content: messageInput
       });
-      alert("消息已发送");
+      toast.success("消息已发送");
+      setMessageDialogOpen(false);
+      setMessageInput("");
+      setCurrentApplication(null);
     } catch (error) {
       console.error("Failed to send message:", error);
-      alert("发送失败，请稍后再试。");
+      toast.error("发送失败，请稍后再试。");
     }
   };
 
@@ -151,31 +185,33 @@ export default function Applications() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <select
-          className="h-10 rounded-md border border-input bg-background px-3 py-2"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">所有状态</option>
-          <option value="PENDING">待审核</option>
-          <option value="REVIEWING">审核中</option>
-          <option value="INTERVIEW">面试中</option>
-          <option value="OFFERED">已发Offer</option>
-          <option value="ACCEPTED">已录用</option>
-          <option value="REJECTED">已拒绝</option>
-        </select>
-        <select
-          className="h-10 rounded-md border border-input bg-background px-3 py-2"
-          value={jobFilter}
-          onChange={(e) => setJobFilter(e.target.value)}
-        >
-          <option value="all">所有职位</option>
-          {jobs.map((job) => (
-            <option key={job.id} value={job.id}>
-              {job.title}
-            </option>
-          ))}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">所有状态</SelectItem>
+            <SelectItem value="PENDING">待审核</SelectItem>
+            <SelectItem value="REVIEWING">审核中</SelectItem>
+            <SelectItem value="INTERVIEW">面试中</SelectItem>
+            <SelectItem value="OFFERED">已发Offer</SelectItem>
+            <SelectItem value="ACCEPTED">已录用</SelectItem>
+            <SelectItem value="REJECTED">已拒绝</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={jobFilter} onValueChange={setJobFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">所有职位</SelectItem>
+            {jobs.map((job) => (
+              <SelectItem key={job.id} value={job.id?.toString() || ""}>
+                {job.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {loading && (
@@ -296,6 +332,62 @@ export default function Applications() {
           </CardContent>
         </Card>
       )}
+
+      {/* Note Dialog */}
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>添加/编辑备注</DialogTitle>
+            <DialogDescription>
+              为申请人“{currentApplication?.applicant?.fullName || currentApplication?.applicant?.username}”添加备注
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="note">备注内容</Label>
+              <Textarea
+                id="note"
+                value={noteInput}
+                onChange={(e) => setNoteInput(e.target.value)}
+                placeholder="输入备注内容..."
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNoteDialogOpen(false)}>取消</Button>
+            <Button onClick={confirmAddNote}>保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Message Dialog */}
+      <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>发送消息</DialogTitle>
+            <DialogDescription>
+              给申请人“{currentApplication?.applicant?.fullName || currentApplication?.applicant?.username}”发送消息
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="message">消息内容</Label>
+              <Textarea
+                id="message"
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                placeholder="输入要发送的消息..."
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMessageDialogOpen(false)}>取消</Button>
+            <Button onClick={confirmSendMessage} disabled={!messageInput.trim()}>发送</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

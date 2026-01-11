@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { ThemeProvider } from "./components/theme-provider";
+import { Toaster } from "./components/ui/sonner";
 // 导入页面
 // 使用懒加载进行代码分割
 import { lazy, Suspense } from "react";
@@ -61,6 +62,7 @@ function RootLayout() {
         <Suspense fallback={<div className="flex h-screen items-center justify-center">加载中...</div>}>
           <Outlet />
         </Suspense>
+        <Toaster />
       </ThemeProvider>
     </div>
   );

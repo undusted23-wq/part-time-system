@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Download, UploadIcon, EditIcon, PlusIcon, BriefcaseIcon, GraduationCapIcon, Loader2, X, Eye } from "lucide-react";
 import authService from "@/services/authService";
 import { PDFPreview } from "@/components/PDFPreview";
+import { toast } from "sonner";
 
 // --- 定义接口类型 (根据你的后端实体) ---
 interface Education {
@@ -117,18 +118,18 @@ export default function Resume() {
           'Content-Type': 'multipart/form-data'
         }
       });
-      alert("简历上传成功！");
+      toast.success("简历上传成功！");
       fetchResume(); // 刷新数据以更新路径
     } catch (error) {
       console.error("上传失败:", error);
-      alert("上传失败，请检查后端服务");
+      toast.error("上传失败，请检查后端服务");
     }
   };
 
   // --- 3. 文件下载 ---
   const handleFileDownload = async () => {
     if (!resume || !resume.resumeFilePath) {
-      alert("您还没有上传过简历文件");
+      toast.warning("您还没有上传过简历文件");
       return;
     }
     try {
@@ -147,7 +148,7 @@ export default function Resume() {
       link.remove();
     } catch (error) {
       console.error("下载失败:", error);
-      alert("下载失败");
+      toast.error("下载失败");
     }
   };
 
@@ -208,12 +209,12 @@ export default function Resume() {
       await axios.put(`${API_BASE_URL}/${resume.id}`, updateData, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      alert("保存成功！");
+      toast.success("保存成功！");
       setIsEditing(false);
       fetchResume();
     } catch (error) {
       console.error("保存失败:", error);
-      alert("保存失败");
+      toast.error("保存失败");
     }
   };
 

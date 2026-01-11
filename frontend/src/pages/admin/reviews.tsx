@@ -1,6 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   CheckIcon, 
   FlagIcon, 
@@ -18,6 +28,8 @@ export default function ReviewManagement() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -105,16 +117,23 @@ export default function ReviewManagement() {
     if (!review.id) {
       return;
     }
-    const confirmed = window.confirm("确认删除该评价吗？");
-    if (!confirmed) {
+    setReviewToDelete(review);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!reviewToDelete?.id) {
       return;
     }
     try {
-      await reviewService.deleteReview(review.id);
-      setReviews((prev) => prev.filter((item) => item.id !== review.id));
+      await reviewService.deleteReview(reviewToDelete.id);
+      setReviews((prev) => prev.filter((item) => item.id !== reviewToDelete.id));
     } catch (error) {
       console.error("Failed to delete review:", error);
       setErrorMessage("删除评价失败，请稍后再试。");
+    } finally {
+      setDeleteDialogOpen(false);
+      setReviewToDelete(null);
     }
   };
 
