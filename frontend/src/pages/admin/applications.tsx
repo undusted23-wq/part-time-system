@@ -1,6 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   CheckIcon, 
   ClipboardIcon, 
@@ -18,6 +28,8 @@ export default function ApplicationManagement() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [applicationToDelete, setApplicationToDelete] = useState<JobApplication | null>(null);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -119,16 +131,23 @@ export default function ApplicationManagement() {
     if (!application.id) {
       return;
     }
-    const confirmed = window.confirm("确认删除该申请记录吗？");
-    if (!confirmed) {
+    setApplicationToDelete(application);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!applicationToDelete?.id) {
       return;
     }
     try {
-      await applicationService.deleteApplication(application.id);
-      setApplications((prev) => prev.filter((item) => item.id !== application.id));
+      await applicationService.deleteApplication(applicationToDelete.id);
+      setApplications((prev) => prev.filter((item) => item.id !== applicationToDelete.id));
     } catch (error) {
       console.error("Failed to delete application:", error);
       setErrorMessage("删除申请记录失败，请稍后再试。");
+    } finally {
+      setDeleteDialogOpen(false);
+      setApplicationToDelete(null);
     }
   };
 
@@ -391,6 +410,23 @@ export default function ApplicationManagement() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除申请记录</AlertDialogTitle>
+            <AlertDialogDescription>
+              确认删除申请人"{getApplicantName(applicationToDelete!)}"的申请记录吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

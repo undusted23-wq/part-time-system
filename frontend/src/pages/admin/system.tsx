@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { 
   ArrowDownIcon,
@@ -213,11 +214,7 @@ export default function SystemManagement() {
                     <p className="text-sm text-muted-foreground">每日凌晨3点自动备份系统数据</p>
                   </div>
                   <div className="flex items-center h-5">
-                    <input 
-                      type="checkbox" 
-                      className="h-4 w-4 rounded border-gray-300" 
-                      defaultChecked={true} 
-                    />
+                    <Checkbox defaultChecked={true} />
                   </div>
                 </div>
                 
@@ -338,11 +335,7 @@ export default function SystemManagement() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">启用双因素认证</label>
-                    <input 
-                      type="checkbox" 
-                      className="h-4 w-4 rounded border-gray-300" 
-                      defaultChecked={false} 
-                    />
+                    <Checkbox defaultChecked={false} />
                   </div>
                   <p className="text-xs text-muted-foreground">为管理员账号启用双因素认证，提高系统安全性</p>
                 </div>
@@ -350,11 +343,7 @@ export default function SystemManagement() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">登录IP限制</label>
-                    <input 
-                      type="checkbox" 
-                      className="h-4 w-4 rounded border-gray-300" 
-                      defaultChecked={true} 
-                    />
+                    <Checkbox defaultChecked={true} />
                   </div>
                   <Textarea 
                     placeholder="请输入允许的IP地址，每行一个" 
@@ -438,11 +427,7 @@ export default function SystemManagement() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">启用维护模式</label>
-                    <input 
-                      type="checkbox" 
-                      className="h-4 w-4 rounded border-gray-300" 
-                      defaultChecked={false} 
-                    />
+                    <Checkbox defaultChecked={false} />
                   </div>
                   <p className="text-xs text-muted-foreground">开启后，只有管理员可以访问系统</p>
                 </div>

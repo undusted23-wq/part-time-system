@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 
@@ -241,17 +242,17 @@ export default function Settings() {
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">通知接收方式</h3>
                 <div className="grid gap-2">
-                  <div className="flex items-center">
-                    <input type="checkbox" id="emailNotification" className="h-4 w-4 rounded border-gray-300" defaultChecked />
-                    <label htmlFor="emailNotification" className="ml-2 text-sm font-medium">电子邮件</label>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="emailNotification" defaultChecked />
+                    <Label htmlFor="emailNotification" className="text-sm font-medium cursor-pointer">电子邮件</Label>
                   </div>
-                  <div className="flex items-center">
-                    <input type="checkbox" id="smsNotification" className="h-4 w-4 rounded border-gray-300" />
-                    <label htmlFor="smsNotification" className="ml-2 text-sm font-medium">短信</label>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="smsNotification" />
+                    <Label htmlFor="smsNotification" className="text-sm font-medium cursor-pointer">短信</Label>
                   </div>
-                  <div className="flex items-center">
-                    <input type="checkbox" id="appNotification" className="h-4 w-4 rounded border-gray-300" defaultChecked />
-                    <label htmlFor="appNotification" className="ml-2 text-sm font-medium">应用内通知</label>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="appNotification" defaultChecked />
+                    <Label htmlFor="appNotification" className="text-sm font-medium cursor-pointer">应用内通知</Label>
                   </div>
                 </div>
               </div>

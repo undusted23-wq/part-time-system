@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   BuildingIcon,
@@ -240,14 +241,12 @@ export default function WriteReview() {
           <div className="space-y-2">
             <Label>匿名选项</Label>
             <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="anonymous"
-                className="h-4 w-4"
                 checked={anonymous}
-                onChange={(e) => setAnonymous(e.target.checked)}
+                onCheckedChange={(checked) => setAnonymous(checked as boolean)}
               />
-              <Label htmlFor="anonymous" className="text-sm font-normal">匿名发布此评价</Label>
+              <Label htmlFor="anonymous" className="text-sm font-normal cursor-pointer">匿名发布此评价</Label>
             </div>
             <p className="text-xs text-muted-foreground">匿名评价将不会显示您的姓名和个人信息</p>
           </div>

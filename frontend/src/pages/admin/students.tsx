@@ -1,6 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   CheckIcon,
   PencilIcon,
@@ -19,7 +30,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 
 export default function StudentManagement() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,6 +42,19 @@ export default function StudentManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogLoading, setDialogLoading] = useState(false);
   const [dialogError, setDialogError] = useState("");
+  
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [studentToEdit, setStudentToEdit] = useState<StudentUser | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    fullName: "",
+    email: "",
+    phoneNumber: ""
+  });
+  
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<StudentUser | null>(null);
 
   // Form state for adding student
   const [formData, setFormData] = useState({
@@ -179,27 +202,27 @@ export default function StudentManagement() {
     if (!student.id) {
       return;
     }
-    const fullName = window.prompt("姓名", student.fullName || "");
-    if (fullName === null) {
-      return;
-    }
-    const email = window.prompt("邮箱", student.email || "");
-    if (email === null) {
-      return;
-    }
-    const phoneNumber = window.prompt("手机号", student.phoneNumber || "");
-    if (phoneNumber === null) {
-      return;
-    }
+    setStudentToEdit(student);
+    setEditFormData({
+      fullName: student.fullName || "",
+      email: student.email || "",
+      phoneNumber: student.phoneNumber || ""
+    });
+    setEditDialogOpen(true);
+  };
 
+  const confirmEdit = async () => {
+    if (!studentToEdit?.id) {
+      return;
+    }
     try {
-      const updated = await userService.updateUser(student.id, {
-        ...student,
-        fullName,
-        email,
-        phoneNumber
+      const updated = await userService.updateUser(studentToEdit.id, {
+        ...studentToEdit,
+        ...editFormData
       });
-      setStudents((prev) => prev.map((item) => (item.id === student.id ? updated : item)));
+      setStudents((prev) => prev.map((item) => (item.id === studentToEdit.id ? updated : item)));
+      setEditDialogOpen(false);
+      setStudentToEdit(null);
     } catch (error) {
       console.error("Failed to update student info:", error);
       setErrorMessage("更新学生信息失败，请稍后再试。");
@@ -210,13 +233,19 @@ export default function StudentManagement() {
     if (!student.id) {
       return;
     }
-    const confirmed = window.confirm(`确认删除学生 ${student.username} 吗？`);
-    if (!confirmed) {
+    setStudentToDelete(student);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!studentToDelete?.id) {
       return;
     }
     try {
-      await userService.deleteUser(student.id);
-      setStudents((prev) => prev.filter((item) => item.id !== student.id));
+      await userService.deleteUser(studentToDelete.id);
+      setStudents((prev) => prev.filter((item) => item.id !== studentToDelete.id));
+      setDeleteDialogOpen(false);
+      setStudentToDelete(null);
     } catch (error) {
       console.error("Failed to delete student:", error);
       setErrorMessage("删除学生失败，请稍后再试。");
@@ -471,6 +500,67 @@ export default function StudentManagement() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Student Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>编辑学生信息</DialogTitle>
+            <DialogDescription>
+              编辑学生"{studentToEdit?.username}"的信息
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-fullName">姓名</Label>
+              <Input
+                id="edit-fullName"
+                value={editFormData.fullName}
+                onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-email">邮箱</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-phoneNumber">手机号</Label>
+              <Input
+                id="edit-phoneNumber"
+                value={editFormData.phoneNumber}
+                onChange={(e) => setEditFormData({ ...editFormData, phoneNumber: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>取消</Button>
+            <Button onClick={confirmEdit}>保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除学生</AlertDialogTitle>
+            <AlertDialogDescription>
+              确认删除学生"{studentToDelete?.username}"吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

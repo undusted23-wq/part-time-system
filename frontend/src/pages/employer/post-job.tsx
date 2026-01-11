@@ -3,6 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import jobService from "@/services/jobService";
 import companyService, { Company } from "@/services/companyService";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +19,7 @@ export default function PostJob() {
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
+  const [deadlineDate, setDeadlineDate] = useState<Date>();
   const [jobData, setJobData] = useState({
     title: "",
     location: "",
@@ -35,22 +44,26 @@ export default function PostJob() {
         }
       } catch (error) {
         console.error("Failed to load companies:", error);
-        alert("加载公司列表失败，请稍后再试。");
+        toast.error("加载公司列表失败，请稍后再试。");
       }
     };
 
     loadCompanies();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    setJobData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
     setJobData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!jobData.companyId) {
-      alert("请先选择所属公司。");
+      toast.error("请先选择所属公司。");
       return;
     }
 
@@ -67,16 +80,14 @@ export default function PostJob() {
         benefits: jobData.benefits || undefined,
         workingHours: jobData.workingHours || undefined,
         companyId: Number(jobData.companyId),
-        applicationDeadline: jobData.applicationDeadline
-          ? new Date(jobData.applicationDeadline).toISOString()
-          : undefined
+        applicationDeadline: deadlineDate ? deadlineDate.toISOString() : undefined
       });
-      alert("职位发布成功！");
+      toast.success("职位发布成功！");
       // Navigate to jobs list after successful creation
       navigate("/employer/jobs");
     } catch (error) {
       console.error("Failed to create job:", error);
-      alert("发布失败，请稍后再试。");
+      toast.error("发布失败，请稍后再试。");
     } finally {
       setLoading(false);
     }
@@ -98,21 +109,18 @@ export default function PostJob() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="companyId">所属公司 <span className="text-red-500">*</span></Label>
-                <select
-                  id="companyId"
-                  name="companyId"
-                  value={jobData.companyId}
-                  onChange={handleChange}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2"
-                  required
-                >
-                  <option value="">请选择公司</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
+                <Select value={jobData.companyId} onValueChange={(value) => handleSelectChange("companyId", value)} required>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="请选择公司" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map((company) => (
+                      <SelectItem key={company.id} value={company.id?.toString() || ""}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="title">职位名称 <span className="text-red-500">*</span></Label>
@@ -137,21 +145,19 @@ export default function PostJob() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="jobType">工作类型 <span className="text-red-500">*</span></Label>
-                <select
-                  id="jobType"
-                  name="jobType"
-                  value={jobData.jobType}
-                  onChange={handleChange}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2"
-                  required
-                >
-                  <option value="PART_TIME">兼职</option>
-                  <option value="INTERNSHIP">实习</option>
-                  <option value="FULL_TIME">全职</option>
-                  <option value="TEMPORARY">临时工</option>
-                  <option value="CONTRACT">合同工</option>
-                  <option value="FREELANCE">自由职业</option>
-                </select>
+                <Select value={jobData.jobType} onValueChange={(value) => handleSelectChange("jobType", value)} required>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PART_TIME">兼职</SelectItem>
+                    <SelectItem value="INTERNSHIP">实习</SelectItem>
+                    <SelectItem value="FULL_TIME">全职</SelectItem>
+                    <SelectItem value="TEMPORARY">临时工</SelectItem>
+                    <SelectItem value="CONTRACT">合同工</SelectItem>
+                    <SelectItem value="FREELANCE">自由职业</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="salary">薪资 <span className="text-red-500">*</span></Label>
@@ -167,31 +173,44 @@ export default function PostJob() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="salaryPeriod">薪资周期 <span className="text-red-500">*</span></Label>
-                <select
-                  id="salaryPeriod"
-                  name="salaryPeriod"
-                  value={jobData.salaryPeriod}
-                  onChange={handleChange}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2"
-                  required
-                >
-                  <option value="HOURLY">小时</option>
-                  <option value="DAILY">天</option>
-                  <option value="WEEKLY">周</option>
-                  <option value="MONTHLY">月</option>
-                  <option value="ANNUALLY">年</option>
-                  <option value="PROJECT_BASED">项目</option>
-                </select>
+                <Select value={jobData.salaryPeriod} onValueChange={(value) => handleSelectChange("salaryPeriod", value)} required>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="HOURLY">小时</SelectItem>
+                    <SelectItem value="DAILY">天</SelectItem>
+                    <SelectItem value="WEEKLY">周</SelectItem>
+                    <SelectItem value="MONTHLY">月</SelectItem>
+                    <SelectItem value="ANNUALLY">年</SelectItem>
+                    <SelectItem value="PROJECT_BASED">项目</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="applicationDeadline">截止日期</Label>
-                <Input
-                  id="applicationDeadline"
-                  name="applicationDeadline"
-                  type="datetime-local"
-                  value={jobData.applicationDeadline}
-                  onChange={handleChange}
-                />
+                <Label>截止日期</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !deadlineDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {deadlineDate ? format(deadlineDate, "PPP") : <span>选择日期</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={deadlineDate}
+                      onSelect={setDeadlineDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="workingHours">工作时长</Label>
@@ -207,48 +226,42 @@ export default function PostJob() {
 
             <div className="space-y-2">
               <Label htmlFor="description">职位描述 <span className="text-red-500">*</span></Label>
-              <textarea
+              <Textarea
                 id="description"
                 name="description"
                 rows={5}
                 value={jobData.description}
                 onChange={handleChange}
                 placeholder="详细描述该职位的工作内容、职责等"
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
                 required
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="requirements">任职要求</Label>
-              <textarea
+              <Textarea
                 id="requirements"
                 name="requirements"
                 rows={4}
                 value={jobData.requirements}
                 onChange={handleChange}
                 placeholder="列出该职位所需的技能、经验、教育背景等要求"
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="benefits">福利待遇</Label>
-              <textarea
+              <Textarea
                 id="benefits"
                 name="benefits"
                 rows={3}
                 value={jobData.benefits}
                 onChange={handleChange}
                 placeholder="如：餐补、交通补贴、弹性时间"
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => navigate("/employer/jobs")}>
-              取消
-            </Button>
+          <CardFooter className="flex justify-end gap-2 mt-6">
             <Button type="submit" disabled={loading}>
               {loading ? "发布中..." : "发布职位"}
             </Button>

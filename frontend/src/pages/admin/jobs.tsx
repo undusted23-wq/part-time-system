@@ -3,6 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   BriefcaseIcon,
   CheckIcon,
   SearchIcon,
@@ -18,6 +28,8 @@ export default function JobManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [jobs, setJobs] = useState<JobRow[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<JobRow | null>(null);
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -141,16 +153,23 @@ export default function JobManagement() {
     if (!job.id) {
       return;
     }
-    const confirmed = window.confirm(`确认删除职位 ${job.title} 吗？`);
-    if (!confirmed) {
+    setJobToDelete(job);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!jobToDelete?.id) {
       return;
     }
     try {
-      await jobService.deleteJob(job.id);
-      setJobs((prev) => prev.filter((item) => item.id !== job.id));
+      await jobService.deleteJob(jobToDelete.id);
+      setJobs((prev) => prev.filter((item) => item.id !== jobToDelete.id));
     } catch (error) {
       console.error("Failed to delete job:", error);
       setErrorMessage("删除职位失败，请稍后再试。");
+    } finally {
+      setDeleteDialogOpen(false);
+      setJobToDelete(null);
     }
   };
 
@@ -648,6 +667,23 @@ function JobApplicationsSection({ applications, onApplicationDeleted }: {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除职位</AlertDialogTitle>
+            <AlertDialogDescription>
+              确认删除职位"{jobToDelete?.title}"吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
