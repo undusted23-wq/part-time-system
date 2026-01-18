@@ -1,10 +1,12 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.ApiResponse;
+import com.example.backend.dto.SavedJobDTO;
 import com.example.backend.model.Job;
 import com.example.backend.model.SavedJob;
 import com.example.backend.model.User;
 import com.example.backend.security.UserDetailsImpl;
+import com.example.backend.service.JobApplicationService;
 import com.example.backend.service.JobService;
 import com.example.backend.service.SavedJobService;
 import com.example.backend.service.UserService;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/saved-jobs")
@@ -33,6 +36,9 @@ public class SavedJobController {
     @Autowired
     private JobService jobService;
 
+    @Autowired
+    private JobApplicationService applicationService;
+
     @GetMapping
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<?> getCurrentUserSavedJobs() {
@@ -42,14 +48,35 @@ public class SavedJobController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         List<SavedJob> savedJobs = savedJobService.getSavedJobsByStudent(student);
-        return ResponseEntity.ok(savedJobs);
+
+        // Convert SavedJob to SavedJobDTO with isApplied information
+        List<SavedJobDTO> savedJobDTOs = savedJobs.stream()
+            .map(savedJob -> {
+                boolean isApplied = applicationService.hasApplied(savedJob.getJob(), student);
+                return SavedJobDTO.fromSavedJob(savedJob, isApplied);
+            })
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(savedJobDTOs);
     }
 
     @GetMapping("/student/{studentId}")
     @PreAuthorize("hasRole('ADMIN') or @securityService.isUser(#studentId, authentication.name)")
     public ResponseEntity<?> getSavedJobsByStudent(@PathVariable Long studentId) {
         return userService.getUserById(studentId)
-                .map(student -> ResponseEntity.ok(savedJobService.getSavedJobsByStudent(student)))
+                .map(student -> {
+                    List<SavedJob> savedJobs = savedJobService.getSavedJobsByStudent(student);
+
+                    // Convert SavedJob to SavedJobDTO with isApplied information
+                    List<SavedJobDTO> savedJobDTOs = savedJobs.stream()
+                        .map(savedJob -> {
+                            boolean isApplied = applicationService.hasApplied(savedJob.getJob(), student);
+                            return SavedJobDTO.fromSavedJob(savedJob, isApplied);
+                        })
+                        .collect(Collectors.toList());
+
+                    return ResponseEntity.ok(savedJobDTOs);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
