@@ -1,14 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { BookmarkIcon, TrashIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import savedJobService, { SavedJob } from "@/services/savedJobService";
 import applicationService from "@/services/applicationService";
+import { toast } from "sonner";
 
 export default function SavedJobs() {
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cancelApplicationDialogOpen, setCancelApplicationDialogOpen] = useState<number | null>(null);
+  const [cancelLoading, setCancelLoading] = useState<number | null>(null);
 
   const loadSavedJobs = async () => {
     setLoading(true);
@@ -34,10 +38,10 @@ export default function SavedJobs() {
     }
     try {
       await savedJobService.unsaveJob(jobId);
-      setSavedJobs((prev) => prev.filter((item) => item.job?.id !== jobId));
+      setSavedJobs((prev) => prev.filter((item) => item.job && item.job.id !== jobId));
     } catch (error) {
       console.error("Failed to unsave job:", error);
-      alert("取消收藏失败，请稍后再试。");
+      toast.error("取消收藏失败，请稍后再试。");
     }
   };
 
@@ -47,10 +51,49 @@ export default function SavedJobs() {
     }
     try {
       await applicationService.applyForJob({ jobId });
-      alert("申请已提交！");
+      
+      // Update the saved job status locally
+      setSavedJobs(prev => 
+        prev.map(saved => 
+          saved.job && saved.job.id === jobId 
+            ? { ...saved, applied: true }
+            : saved
+        )
+      );
+      
+      toast.success("申请已提交！");
     } catch (error) {
       console.error("Failed to apply:", error);
-      alert("申请失败，请稍后再试。");
+      toast.error("申请失败，请稍后再试。");
+    }
+  };
+
+  const handleCancelApplication = async (jobId?: number) => {
+    if (!jobId) {
+      return;
+    }
+    
+    setCancelLoading(jobId);
+    try {
+      // Assuming we have a method to cancel applications
+      await applicationService.cancelApplication(jobId);
+      
+      // Update the saved job status locally
+      setSavedJobs(prev => 
+        prev.map(saved => 
+          saved.job && saved.job.id === jobId 
+            ? { ...saved, applied: false }
+            : saved
+        )
+      );
+      
+      setCancelApplicationDialogOpen(null);
+      toast.success("已取消申请！");
+    } catch (error) {
+      console.error("Failed to cancel application:", error);
+      toast.error("取消申请失败，请稍后再试。");
+    } finally {
+      setCancelLoading(null);
     }
   };
 
@@ -63,7 +106,7 @@ export default function SavedJobs() {
       TEMPORARY: "临时工",
       FREELANCE: "自由职业"
     };
-    return typeMap[type || ""] || type || "-";
+    return typeMap[type ? type : ""] || (type || "-");
   };
 
   const formatSalary = (salary?: number, period?: string) => {
@@ -78,7 +121,7 @@ export default function SavedJobs() {
       ANNUALLY: "年",
       PROJECT_BASED: "项目"
     };
-    return `¥${salary}/${periodMap[period || ""] || "薪资"}`;
+    return `¥${salary}/${periodMap[period ? period : ""] || "薪资"}`;
   };
 
   return (
@@ -110,10 +153,10 @@ export default function SavedJobs() {
               <CardHeader>
                 <div className="flex justify-between">
                   <div>
-                    <CardTitle>{job?.title || "未知职位"}</CardTitle>
-                    <CardDescription className="mt-1">{job?.company?.name || "未知企业"} · {job?.location || "未标注地点"}</CardDescription>
+                    <CardTitle>{job && job.title || "未知职位"}</CardTitle>
+                    <CardDescription className="mt-1">{job && job.company && job.company.name || "未知企业"} · {job && job.location || "未标注地点"}</CardDescription>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => handleUnsave(job?.id)}>
+                  <Button variant="ghost" size="icon" onClick={() => handleUnsave(job && job.id)}>
                     <TrashIcon className="h-5 w-5 text-red-500" />
                   </Button>
                 </div>
@@ -122,20 +165,57 @@ export default function SavedJobs() {
                 <div className="grid gap-2">
                   <div className="flex gap-2 text-sm">
                     <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                      {formatJobType(job?.jobType)}
+                      {formatJobType(job && job.jobType)}
                     </span>
                     <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                      {formatSalary(job?.salary, job?.salaryPeriod)}
+                      {formatSalary(job && job.salary, job && job.salaryPeriod)}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground">{job?.description}</p>
+                  <p className="text-sm text-muted-foreground">{job && job.description}</p>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">
                 <div className="text-sm text-muted-foreground">
                   {saved.savedAt ? `保存于 ${new Date(saved.savedAt).toLocaleDateString()}` : "保存时间未知"}
                 </div>
-                <Button onClick={() => handleApply(job?.id)}>申请</Button>
+                
+                {saved.applied ? (
+                  <Dialog open={cancelApplicationDialogOpen === (job && job.id)} onOpenChange={(open) => 
+                    setCancelApplicationDialogOpen(open ? (job && job.id) || null : null)
+                  }>
+                    <DialogTrigger asChild>
+                      <Button variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">
+                        已申请
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>确认取消申请</DialogTitle>
+                        <DialogDescription>
+                          您确定要取消对此职位的申请吗？此操作无法撤销。
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setCancelApplicationDialogOpen(null)}
+                          disabled={cancelLoading === (job && job.id)}
+                        >
+                          取消
+                        </Button>
+                        <Button 
+                          variant="destructive"
+                          onClick={() => handleCancelApplication(job && job.id)}
+                          disabled={cancelLoading === (job && job.id)}
+                        >
+                          {cancelLoading === (job && job.id) ? "处理中..." : "确认取消"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                ) : (
+                  <Button onClick={() => handleApply(job && job.id)}>申请</Button>
+                )}
               </CardFooter>
             </Card>
           )})}

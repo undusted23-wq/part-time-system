@@ -6,6 +6,7 @@ interface SavedJob {
   job: Job;
   notes?: string;
   savedAt?: string;
+  isApplied?: boolean;
 }
 
 const savedJobService = {

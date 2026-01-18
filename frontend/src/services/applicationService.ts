@@ -91,6 +91,18 @@ const applicationService = {
 
   deleteApplication: async (id: number) => {
     return api.delete(`/api/applications/${id}`);
+  },
+
+  cancelApplication: async (jobId: number) => {
+    // Find the application for this job and delete it
+    const myApplications = await applicationService.getMyApplications();
+    const application = myApplications.find(app => app.job?.id === jobId);
+    
+    if (application?.id) {
+      return applicationService.deleteApplication(application.id);
+    } else {
+      throw new Error("Application not found");
+    }
   }
 };
 
