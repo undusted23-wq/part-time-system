@@ -155,7 +155,7 @@ export default function JobSearch() {
                     <SelectValue placeholder="工作类型" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">所有类型</SelectItem>
+                    <SelectItem value="1">所有类型</SelectItem>
                     <SelectItem value="PART_TIME">兼职</SelectItem>
                     <SelectItem value="INTERNSHIP">实习</SelectItem>
                     <SelectItem value="FULL_TIME">全职</SelectItem>

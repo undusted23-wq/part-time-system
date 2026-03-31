@@ -39,7 +39,7 @@ export default function StudentDashboard() {
       console.log("✅ [前端] 获取到数据:", data);
 
       if (data && data.length > 0) {
-         setRecommendedJobs(data);
+         setRecommendedJobs(data.sort(() => Math.random() - 0.5).slice(0,6));
       } else {
          setRecommendedJobs([]); // 没数据就清空
       }

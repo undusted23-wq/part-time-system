@@ -1,33 +1,24 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `frontend/`: Vite + React + TypeScript UI (Tailwind, Radix UI). Page entry points live under `frontend/src/pages/`; shared APIs under `frontend/src/services/`.
-- `backend/`: Spring Boot REST API. Main code in `backend/src/main/java/`, config in `backend/src/main/resources/`.
-- `ai_service/`: Standalone Flask service (`ai_service/app.py`) that runs model-based recommendations.
-- `backend/src/test/` exists but currently has no tests.
+This repo is split into `frontend/` and `backend/`. The frontend is a Vite + React + TypeScript app; routes live in `frontend/src/pages/`, shared UI in `frontend/src/components/`, API clients in `frontend/src/services/`, and static assets in `frontend/public/`. Desktop packaging lives in `frontend/src-tauri/`. The backend is a Spring Boot service with controllers, services, repositories, models, and DTOs under `backend/src/main/java/com/example/backend/`. Runtime config is in `backend/src/main/resources/application.properties`, and tests live in `backend/src/test/java/`.
 
 ## Build, Test, and Development Commands
-- Frontend dev server (hot reload): `cd frontend && bun run dev`
-- Frontend production build: `cd frontend && bun run build`
-- Backend dev server: `cd backend && ./mvnw spring:run`
-- Backend tests (if/when added): `cd backend && ./mvnw test`
-- AI service: `cd ai_service && python app.py`
+- `cd frontend && bun install`: install UI dependencies.
+- `cd frontend && bun run dev`: start the Vite dev server.
+- `cd frontend && bun run build`: run TypeScript checks and build production assets.
+- `cd frontend && bun run tauri dev`: run the desktop shell against the frontend.
+- `cd backend && ./mvnw spring:run`: start the API on `http://localhost:8080`.
+- `cd backend && ./mvnw test`: run JUnit tests.
 
 ## Coding Style & Naming Conventions
-- Frontend: 2-space indentation, TypeScript + React, hooks prefixed with `use`, components in PascalCase (e.g., `StudentDashboard.tsx`), utilities in camelCase. Prefer `frontend/src/services/` for API calls.
-- Backend: 4-space indentation, Java classes in PascalCase, packages in lowercase (`com.example.backend.*`), Spring annotations per controller/service conventions.
-- Python (AI service): snake_case for functions/variables.
+Frontend TypeScript runs in `strict` mode and supports the `@/` import alias. Follow the surrounding file style, keep components in PascalCase, page files lowercase by route (`pages/student/resume.tsx`), and service modules camelCase with `*Service.ts`. Keep reusable shadcn UI primitives in `frontend/src/components/ui/`. Backend Java uses 4-space indentation, lowercase packages, and PascalCase class names; keep Spring layers separated by responsibility and name DTOs with `Request`, `Response`, or `DTO` suffixes.
 
 ## Testing Guidelines
-- No automated tests are present yet. Add tests alongside new logic:
-  - Backend: place JUnit tests in `backend/src/test/java/...`.
-  - Frontend: introduce a test framework before adding UI tests.
-- Run `./mvnw test` after adding backend tests.
+Backend testing uses Spring Boot + JUnit. Add tests under mirrored packages in `backend/src/test/java/` and name them `*Tests`. The current suite is minimal, so new backend behavior should ship with targeted service or controller coverage. The frontend has no test runner configured yet; at minimum, run `bun run build` before opening a PR.
 
 ## Commit & Pull Request Guidelines
-- Git history shows short, informal messages (e.g., `update: ...`, `save: ...`, and Chinese summaries). Keep commits concise; a short prefix is acceptable but not required.
-- PRs should include: a clear description, steps to verify, and UI screenshots/gifs when visual changes are made.
+Recent history follows short conventional prefixes such as `feat:`, `fix:`, `docs:`, and `chore:`. Keep commit subjects brief and imperative, in English or Chinese. PRs should include a concise summary, manual verification steps, linked issues when applicable, and screenshots for UI changes.
 
-## Configuration & Secrets
-- Frontend environment variables live in `frontend/.env` (see `frontend/.env.example` for `VITE_API_KEY` and model settings).
-- Backend configuration is in `backend/src/main/resources/application.properties` (ports, DB path, JWT secrets).
+## Configuration & Security Notes
+Do not commit real secrets. `backend/src/main/resources/application.properties` currently contains local SQLite and JWT settings; prefer local-only overrides when changing them. Keep `frontend/src/services/api.ts` aligned with the backend base URL and port.

@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -182,12 +183,18 @@ public class RecommendationService {
         double freshness = freshnessScore(job);
         double salaryBoost = salaryScore(job.getSalary());
 
+        // 引入随机因子 (Random Factor)
+        // 生成 0.0 到 1.0 之间的随机数，增加微小的随机扰动权重
+        // 这使得核心分数相近的职位在每次查询时能够实现乱序推荐，同时不会破坏高匹配度职位的整体优势
+        double randomJitter = ThreadLocalRandom.current().nextDouble();
+
         return contentSimilarity * 0.55
                 + behaviorSimilarity * 0.23
                 + skillOverlap * 0.12
                 + titleFocus * 0.05
                 + freshness * 0.03
-                + salaryBoost * 0.02;
+                + salaryBoost * 0.02
+                + randomJitter * 0.05; // 分配 5% 的权重给随机因子
     }
 
     private void addJobWeight(Map<String, Double> vector, Job job, double scale) {
