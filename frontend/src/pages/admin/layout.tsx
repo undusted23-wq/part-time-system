@@ -42,9 +42,6 @@ export default function AdminLayout() {
           </div>
         </div>
         <nav className="grid gap-4 px-2">
-          <div className="mb-2">
-            <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">主要功能</p>
-          </div>
           <Button variant="ghost" className="justify-start gap-2 hover:bg-blue-200" asChild>
             <Link to="/admin" className="relative group">
               <span className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
@@ -74,6 +71,16 @@ export default function AdminLayout() {
               <span>学生管理</span>
             </Link>
           </Button>
+                    <Button variant="ghost" className="justify-start gap-2 hover:bg-blue-200" asChild>
+            <Link to="/admin/companies" className="relative group">
+              <span className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-800 mr-2">
+                <BuildingIcon className="h-4 w-4" />
+              </div>
+              <span>企业管理</span>
+            </Link>
+          </Button>
+          <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 mt-6">业务管理</p>
           <Button variant="ghost" className="justify-start gap-2 hover:bg-blue-200" asChild>
             <Link to="/admin/resumes" className="relative group">
               <span className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
@@ -83,34 +90,27 @@ export default function AdminLayout() {
               <span>简历管理</span>
             </Link>
           </Button>
-          <Button variant="ghost" className="justify-start gap-2 hover:bg-blue-200" asChild>
-            <Link to="/admin/companies" className="relative group">
-              <span className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-800 mr-2">
-                <BuildingIcon className="h-4 w-4" />
-              </div>
-              <span>企业信息</span>
-            </Link>
-          </Button>
+
           <Button variant="ghost" className="justify-start gap-2 hover:bg-blue-200" asChild>
             <Link to="/admin/jobs" className="relative group">
               <span className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-800 mr-2">
                 <BriefcaseIcon className="h-4 w-4" />
               </div>
-              <span>招聘信息</span>
+              <span>职位管理</span>
             </Link>
           </Button>
-          <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 mt-6">内容管理</p>
+          
           <Button variant="ghost" className="justify-start gap-2 hover:bg-blue-200" asChild>
             <Link to="/admin/applications" className="relative group">
               <span className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-100 text-amber-800 mr-2">
                 <ClipboardIcon className="h-4 w-4" />
               </div>
-              <span>应聘管理</span>
+              <span>投递记录</span>
             </Link>
           </Button>
+          <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 mt-6">业务与互动</p>
           <Button variant="ghost" className="justify-start gap-2 hover:bg-blue-200" asChild>
             <Link to="/admin/reviews" className="relative group">
               <span className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
@@ -126,7 +126,7 @@ export default function AdminLayout() {
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-purple-100 text-purple-800 mr-2">
                 <MessageSquareIcon className="h-4 w-4" />
               </div>
-              <span>留言管理</span>
+              <span>私信管理</span>
             </Link>
           </Button>
 
