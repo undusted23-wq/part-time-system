@@ -165,7 +165,7 @@ export default function AdminLayout() {
             </Button>
 
             <Button variant="ghost" size="icon" asChild>
-              <Link to="/admin/settings">
+              <Link to="/admin/system">
                 <CogIcon className="h-5 w-5" />
                 <span className="sr-only">设置</span>
               </Link>
