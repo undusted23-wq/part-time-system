@@ -12,8 +12,11 @@ public interface ReviewService {
     List<Review> getAllReviews();
     Optional<Review> getReviewById(Long id);
     List<Review> getReviewsByCompany(Company company);
+    List<Review> getReviewsReceivedByCompany(Company company);
+    List<Review> getReviewsWrittenByCompany(Company company);
     List<Review> getReviewsByJob(Job job);
     List<Review> getReviewsByStudent(User student);
+    List<Review> getReviewsReceivedByStudent(User student);
     Long getReviewCountForCompany(Company company);
     Double getAverageRatingForCompany(Company company);
     Review createReview(Review review);

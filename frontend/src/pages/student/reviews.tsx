@@ -6,6 +6,7 @@ import reviewService, { Review } from "@/services/reviewService";
 
 export default function Reviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [receivedReviews, setReceivedReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -13,8 +14,12 @@ export default function Reviews() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const data = await reviewService.getMyReviews();
-      setReviews(Array.isArray(data) ? data : []);
+      const [authored, received] = await Promise.all([
+        reviewService.getMyReviews(),
+        reviewService.getMyReceivedReviews()
+      ]);
+      setReviews(Array.isArray(authored) ? authored : []);
+      setReceivedReviews(Array.isArray(received) ? received : []);
     } catch (error) {
       console.error("Failed to load reviews:", error);
       setErrorMessage(error instanceof Error ? error.message : "加载评价失败，请稍后再试。");
@@ -129,6 +134,49 @@ export default function Reviews() {
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>企业给我的评价</CardTitle>
+            <CardDescription>来自企业端的信用反馈</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {receivedReviews.length === 0 ? (
+              <p className="text-sm text-muted-foreground">暂无企业评价</p>
+            ) : (
+              receivedReviews.map((review) => (
+                <Card key={`received-${review.id}`}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle>{review.jobTitle || review.job?.title || "企业评价"}</CardTitle>
+                        <CardDescription>
+                          {review.company?.name || "未知企业"} · {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : "-"}
+                        </CardDescription>
+                      </div>
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <StarIcon
+                            key={star}
+                            className={`h-4 w-4 ${star <= review.rating ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{review.content}</p>
+                    {review.verified !== undefined && (
+                      <div className="mt-4 text-xs text-muted-foreground">
+                        {review.verified ? "已审核" : "待审核"}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

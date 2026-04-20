@@ -1,5 +1,4 @@
 import api from './api';
-import authService from './authService';
 
 interface Review {
   id?: number;
@@ -12,9 +11,11 @@ interface Review {
   jobTitle?: string;
   anonymous: boolean;
   verified?: boolean;
+  reviewerRole?: "STUDENT" | "EMPLOYER";
   createdAt?: string;
   companyId?: number;
   jobId?: number;
+  studentId?: number;
   company?: {
     id?: number;
     name?: string;
@@ -41,6 +42,7 @@ interface ReviewCreateInput {
   anonymous: boolean;
   companyId: number;
   jobId?: number;
+  studentId?: number;
 }
 
 interface CompanyReviewsResponse {
@@ -76,12 +78,27 @@ const reviewService = {
   
   // 获取当前学生的所有评价
   getMyReviews: async () => {
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser?.id) {
+    const token = localStorage.getItem('token');
+    if (!token) {
       throw new Error('请先登录后查看评价。');
     }
 
-    const response = await api.get<Review[]>(`/api/reviews/student/${currentUser.id}`);
+    const response = await api.get<Review[]>('/api/reviews/me/authored');
+    return response.data;
+  },
+
+  getMyReceivedReviews: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('请先登录后查看评价。');
+    }
+
+    const response = await api.get<Review[]>('/api/reviews/me/received');
+    return response.data;
+  },
+
+  getCompanyAuthoredReviews: async (companyId: number) => {
+    const response = await api.get<Review[]>(`/api/reviews/company/${companyId}/authored`);
     return response.data;
   },
   
@@ -94,8 +111,12 @@ const reviewService = {
     if (reviewData.jobId) {
       payload.job = { id: reviewData.jobId };
     }
+    if (reviewData.studentId) {
+      payload.student = { id: reviewData.studentId };
+    }
     delete payload.companyId;
     delete payload.jobId;
+    delete payload.studentId;
     const response = await api.post<Review>('/api/reviews', payload);
     return response.data;
   },

@@ -151,8 +151,8 @@ export default function ApplicationManagement() {
     }
   };
 
-  const getApplicantName = (application: JobApplication) => {
-    return application.applicant?.fullName || application.applicant?.username || "未知学生";
+  const getApplicantName = (application?: JobApplication | null) => {
+    return application?.applicant?.fullName || application?.applicant?.username || "未知学生";
   };
 
   const stats = useMemo(() => {
@@ -416,7 +416,7 @@ export default function ApplicationManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除申请记录</AlertDialogTitle>
             <AlertDialogDescription>
-              确认删除申请人"{getApplicantName(applicationToDelete!)}"的申请记录吗？此操作无法撤销。
+              确认删除申请人"{getApplicantName(applicationToDelete)}"的申请记录吗？此操作无法撤销。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -113,9 +113,9 @@ public class JobController {
             job.setWorkingHours(jobRequest.getWorkingHours());
             job.setCompany(company);
             job.setApplicationDeadline(jobRequest.getApplicationDeadline());
-            job.setActive(true);
+            job.setActive(false);
 
-            Job createdJob = jobService.createJob(job);
+            Job createdJob = jobService.createEmployerJob(job);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdJob);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -163,6 +163,10 @@ public class JobController {
                     job.setWorkingHours(jobRequest.getWorkingHours());
                     job.setApplicationDeadline(jobRequest.getApplicationDeadline());
 
+                    if (!isAdmin) {
+                        return ResponseEntity.ok(jobService.updateEmployerJob(job));
+                    }
+
                     return ResponseEntity.ok(jobService.updateJob(job));
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -187,6 +191,11 @@ public class JobController {
                         .body(new ApiResponse(false, "You don't have permission to update this job status"));
             }
             
+            if (!isAdmin && active) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse(false, "Only admins can publish jobs after review"));
+            }
+
             Job updatedJob = jobService.setJobActive(id, active);
             return ResponseEntity.ok(updatedJob);
         } catch (Exception e) {

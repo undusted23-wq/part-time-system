@@ -21,6 +21,11 @@ interface UpdateProfileData {
 }
 
 const userService = {
+  getAllUsers: async () => {
+    const response = await api.get<UserProfile[]>('/api/users');
+    return response.data;
+  },
+
   getProfile: async () => {
     // Get current user ID from localStorage
     const userStr = localStorage.getItem('user');

@@ -195,8 +195,8 @@ export default function JobManagement() {
           onChange={(e) => setStatusFilter(e.target.value)}
         >
           <option value="all">所有状态</option>
-          <option value="active">招聘中</option>
-          <option value="closed">已结束</option>
+          <option value="active">已发布</option>
+          <option value="closed">待审核/已下线</option>
         </select>
         <select
           className="h-10 rounded-md border border-input bg-background px-3 py-1"
@@ -259,7 +259,7 @@ export default function JobManagement() {
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${job.active ? "bg-green-100 text-green-800" :
                         "bg-gray-100 text-gray-800"
                         }`}>
-                        {job.active ? "招聘中" : "已结束"}
+                        {job.active ? "已发布" : "待审核/已下线"}
                       </span>
                     </td>
                     <td className="p-2">{applicationsByJobId.get(job.id || 0) || 0}</td>
@@ -283,7 +283,7 @@ export default function JobManagement() {
                             onClick={() => handleToggleJob(job)}
                           >
                             <CheckIcon className="h-4 w-4" />
-                            <span className="sr-only">重新发布</span>
+                            <span className="sr-only">审核通过并发布</span>
                           </Button>
                         )}
                         <Button
@@ -348,14 +348,14 @@ export default function JobManagement() {
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-1">
                   <BriefcaseIcon className="h-4 w-4 text-green-500" />
-                  招聘中
+                  已发布
                 </span>
                 <span>{jobs.filter(c => c.active).length}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-1">
                   <BriefcaseIcon className="h-4 w-4 text-yellow-500" />
-                  已结束
+                  待审核/已下线
                 </span>
                 <span>{jobs.filter(c => !c.active).length}</span>
               </div>
@@ -392,7 +392,7 @@ export default function JobManagement() {
                       </p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => handleToggleJob(job)}>
-                      {job.active ? "下线" : "发布"}
+                      {job.active ? "下线" : "审核发布"}
                     </Button>
                   </div>
                 ))}

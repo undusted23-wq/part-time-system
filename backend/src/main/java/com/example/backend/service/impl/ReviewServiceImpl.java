@@ -3,6 +3,7 @@ package com.example.backend.service.impl;
 import com.example.backend.model.Company;
 import com.example.backend.model.Job;
 import com.example.backend.model.Review;
+import com.example.backend.model.ReviewAuthorType;
 import com.example.backend.model.User;
 import com.example.backend.repository.ReviewRepository;
 import com.example.backend.service.ReviewService;
@@ -31,7 +32,17 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public List<Review> getReviewsByCompany(Company company) {
-        return reviewRepository.findByCompanyOrderByCreatedAtDesc(company);
+        return getReviewsReceivedByCompany(company);
+    }
+
+    @Override
+    public List<Review> getReviewsReceivedByCompany(Company company) {
+        return reviewRepository.findByCompanyAndReviewerRoleOrderByCreatedAtDesc(company, ReviewAuthorType.STUDENT);
+    }
+
+    @Override
+    public List<Review> getReviewsWrittenByCompany(Company company) {
+        return reviewRepository.findByCompanyAndReviewerRoleOrderByCreatedAtDesc(company, ReviewAuthorType.EMPLOYER);
     }
 
     @Override
@@ -41,17 +52,22 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public List<Review> getReviewsByStudent(User student) {
-        return reviewRepository.findByStudent(student);
+        return reviewRepository.findByStudentAndReviewerRoleOrderByCreatedAtDesc(student, ReviewAuthorType.STUDENT);
+    }
+
+    @Override
+    public List<Review> getReviewsReceivedByStudent(User student) {
+        return reviewRepository.findByStudentAndReviewerRoleOrderByCreatedAtDesc(student, ReviewAuthorType.EMPLOYER);
     }
 
     @Override
     public Long getReviewCountForCompany(Company company) {
-        return reviewRepository.countByCompany(company);
+        return reviewRepository.countByCompanyAndReviewerRole(company, ReviewAuthorType.STUDENT);
     }
 
     @Override
     public Double getAverageRatingForCompany(Company company) {
-        return reviewRepository.findAverageRatingByCompany(company);
+        return reviewRepository.findAverageRatingByCompanyAndReviewerRole(company, ReviewAuthorType.STUDENT);
     }
 
     @Override

@@ -63,9 +63,21 @@ public class JobService {
     public Job createJob(Job job) {
         return jobRepository.save(job);
     }
+
+    @Transactional
+    public Job createEmployerJob(Job job) {
+        job.setActive(false);
+        return jobRepository.save(job);
+    }
     
     @Transactional
     public Job updateJob(Job job) {
+        return jobRepository.save(job);
+    }
+
+    @Transactional
+    public Job updateEmployerJob(Job job) {
+        job.setActive(false);
         return jobRepository.save(job);
     }
     

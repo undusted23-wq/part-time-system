@@ -51,7 +51,7 @@ interface JobApplicationRequest {
 
 const jobService = {
   getAllJobs: async () => {
-    const response = await api.get('/api/jobs');
+    const response = await api.get<Job[]>('/api/jobs');
     return response.data;
   },
   // === 【新增】获取智能推荐职位 ===

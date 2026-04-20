@@ -4,6 +4,7 @@ import com.example.backend.dto.ApiResponse;
 import com.example.backend.model.Company;
 import com.example.backend.model.Job;
 import com.example.backend.model.Review;
+import com.example.backend.model.ReviewAuthorType;
 import com.example.backend.model.User;
 import com.example.backend.security.UserDetailsImpl;
 import com.example.backend.service.CompanyService;
@@ -56,7 +57,7 @@ public class ReviewController {
         return companyService.getCompanyById(companyId)
                 .map(company -> {
                     Map<String, Object> response = new HashMap<>();
-                    List<Review> reviews = reviewService.getReviewsByCompany(company);
+                    List<Review> reviews = reviewService.getReviewsReceivedByCompany(company);
                     Double avgRating = reviewService.getAverageRatingForCompany(company);
                     Long count = reviewService.getReviewCountForCompany(company);
                     
@@ -83,26 +84,83 @@ public class ReviewController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @GetMapping("/me/authored")
     @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> getMyReviews(Authentication authentication) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        return userService.getUserById(userDetails.getId())
+                .map(student -> ResponseEntity.ok(reviewService.getReviewsByStudent(student)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/student/{studentId}/received")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isUser(#studentId, authentication.name)")
+    public ResponseEntity<?> getReviewsReceivedByStudent(@PathVariable Long studentId) {
+        return userService.getUserById(studentId)
+                .map(student -> ResponseEntity.ok(reviewService.getReviewsReceivedByStudent(student)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/me/received")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> getMyReceivedReviews(Authentication authentication) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        return userService.getUserById(userDetails.getId())
+                .map(student -> ResponseEntity.ok(reviewService.getReviewsReceivedByStudent(student)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/company/{companyId}/authored")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isCompanyOwner(#companyId, authentication.name)")
+    public ResponseEntity<?> getReviewsWrittenByCompany(@PathVariable Long companyId) {
+        return companyService.getCompanyById(companyId)
+                .map(company -> ResponseEntity.ok(reviewService.getReviewsWrittenByCompany(company)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('STUDENT') or hasRole('EMPLOYER')")
     public ResponseEntity<?> createReview(@Valid @RequestBody Review review) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            User student = userService.getUserById(userDetails.getId())
+            User currentUser = userService.getUserById(userDetails.getId())
                     .orElseThrow(() -> new RuntimeException("User not found"));
-            
-            // Check if company exists
-            companyService.getCompanyById(review.getCompany().getId())
-                    .orElseThrow(() -> new RuntimeException("Company not found"));
-            
-            // Check if job exists if provided
-            if (review.getJob() != null && review.getJob().getId() != null) {
-                jobService.getJobById(review.getJob().getId())
-                        .orElseThrow(() -> new RuntimeException("Job not found"));
+
+            if (review.getCompany() == null || review.getCompany().getId() == null) {
+                throw new RuntimeException("Company is required");
             }
-            
-            review.setStudent(student);
+
+            Company company = companyService.getCompanyById(review.getCompany().getId())
+                    .orElseThrow(() -> new RuntimeException("Company not found"));
+
+            if (review.getJob() != null && review.getJob().getId() != null) {
+                Job job = jobService.getJobById(review.getJob().getId())
+                        .orElseThrow(() -> new RuntimeException("Job not found"));
+                review.setJob(job);
+            }
+
+            if (currentUser.getRole().name().equals("STUDENT")) {
+                review.setStudent(currentUser);
+                review.setCompany(company);
+                review.setReviewerRole(ReviewAuthorType.STUDENT);
+            } else {
+                if (!company.getEmployer().getId().equals(currentUser.getId())) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(new ApiResponse(false, "You don't have permission to review for this company"));
+                }
+
+                if (review.getStudent() == null || review.getStudent().getId() == null) {
+                    throw new RuntimeException("Student is required");
+                }
+
+                User reviewedStudent = userService.getUserById(review.getStudent().getId())
+                        .orElseThrow(() -> new RuntimeException("Student not found"));
+                review.setStudent(reviewedStudent);
+                review.setCompany(company);
+                review.setReviewerRole(ReviewAuthorType.EMPLOYER);
+            }
+
             review.setVerified(false); // New reviews are unverified by default
             
             Review savedReview = reviewService.createReview(review);
@@ -114,7 +172,7 @@ public class ReviewController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('STUDENT') and @securityService.isReviewOwner(#id, authentication.name)")
+    @PreAuthorize("@securityService.isReviewOwner(#id, authentication.name)")
     public ResponseEntity<?> updateReview(@PathVariable Long id, @Valid @RequestBody Review reviewDetails) {
         return reviewService.getReviewById(id)
                 .map(review -> {
