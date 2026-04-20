@@ -1,4 +1,5 @@
 import api from './api';
+import authService from './authService';
 
 interface Review {
   id?: number;
@@ -27,6 +28,19 @@ interface Review {
     id?: number;
     title?: string;
   };
+}
+
+interface ReviewCreateInput {
+  title: string;
+  content: string;
+  rating: number;
+  pros?: string;
+  cons?: string;
+  workPeriod?: string;
+  jobTitle?: string;
+  anonymous: boolean;
+  companyId: number;
+  jobId?: number;
 }
 
 interface CompanyReviewsResponse {
@@ -62,18 +76,22 @@ const reviewService = {
   
   // 获取当前学生的所有评价
   getMyReviews: async () => {
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser?.id) {
+      throw new Error('请先登录后查看评价。');
+    }
+
     const response = await api.get<Review[]>(`/api/reviews/student/${currentUser.id}`);
     return response.data;
   },
   
   // 创建新评价
-  createReview: async (reviewData: Review) => {
+  createReview: async (reviewData: ReviewCreateInput) => {
     const payload: any = { ...reviewData };
-    if (reviewData.companyId && !reviewData.company) {
+    if (reviewData.companyId) {
       payload.company = { id: reviewData.companyId };
     }
-    if (reviewData.jobId && !reviewData.job) {
+    if (reviewData.jobId) {
       payload.job = { id: reviewData.jobId };
     }
     delete payload.companyId;
@@ -109,4 +127,4 @@ const reviewService = {
 };
 
 export default reviewService;
-export type { Review, CompanyReviewsResponse };
+export type { Review, ReviewCreateInput, CompanyReviewsResponse };

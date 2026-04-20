@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StarIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import ReviewForm from "@/components/review/ReviewForm";
 import reviewService, { Review } from "@/services/reviewService";
 
 export default function Reviews() {
@@ -9,22 +9,22 @@ export default function Reviews() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchReviews = async () => {
-      setLoading(true);
-      setErrorMessage(null);
-      try {
-        const data = await reviewService.getMyReviews();
-        setReviews(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Failed to load reviews:", error);
-        setErrorMessage("加载评价失败，请稍后再试。");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadReviews = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const data = await reviewService.getMyReviews();
+      setReviews(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load reviews:", error);
+      setErrorMessage(error instanceof Error ? error.message : "加载评价失败，请稍后再试。");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchReviews();
+  useEffect(() => {
+    loadReviews();
   }, []);
 
   const averageRating = useMemo(() => {
@@ -37,6 +37,13 @@ export default function Reviews() {
   return (
     <div className="grid gap-6">
       <h1 className="text-2xl font-bold">我的评价</h1>
+
+      <ReviewForm
+        title="提交评价"
+        description="填写兼职体验并直接提交到系统，成功后会立即更新下方历史记录。"
+        submitLabel="提交评价"
+        onSuccess={loadReviews}
+      />
 
       <div className="grid gap-4">
         <Card>
