@@ -30,7 +30,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     public List<Resume> getResumesByStudent(User student) {
-        return resumeRepository.findByStudent(student);
+        return resumeRepository.findByStudentOrderByIdDesc(student);
     }
 
     @Override
@@ -40,7 +40,12 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     public Optional<Resume> getDefaultResume(User student) {
-        return resumeRepository.findFirstByStudentAndIsDefaultTrueOrderByUpdatedAtDesc(student);
+        Optional<Resume> defaultResume = resumeRepository.findFirstByStudentAndIsDefaultTrueOrderByUpdatedAtDesc(student);
+        if (defaultResume.isPresent()) {
+            return defaultResume;
+        }
+
+        return resumeRepository.findFirstByStudentAndIsActiveTrueOrderByIdDesc(student);
     }
 
     @Override
@@ -52,7 +57,7 @@ public class ResumeServiceImpl implements ResumeService {
         resume.setUpdatedAt(LocalDateTime.now());
         
         // If this is the first resume for a student, make it default
-        if (resumeRepository.findByStudent(resume.getStudent()).isEmpty()) {
+        if (resumeRepository.findByStudentOrderByIdDesc(resume.getStudent()).isEmpty()) {
             resume.setDefault(true);
         }
         
@@ -69,7 +74,7 @@ public class ResumeServiceImpl implements ResumeService {
     @Transactional
     public void setDefaultResume(Long resumeId, User student) {
         // First, unset default for all resumes of this student
-        List<Resume> studentResumes = resumeRepository.findByStudent(student);
+        List<Resume> studentResumes = resumeRepository.findByStudentOrderByIdDesc(student);
         for (Resume r : studentResumes) {
             r.setDefault(false);
             resumeRepository.save(r);

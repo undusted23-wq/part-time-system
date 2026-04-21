@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import com.example.backend.model.Company;
 import com.example.backend.model.Job;
 import com.example.backend.model.Review;
+import com.example.backend.model.ReviewAuthorType;
 import com.example.backend.service.CompanyService;
 import com.example.backend.service.JobService;
 import com.example.backend.service.ReviewService;
@@ -133,7 +134,12 @@ public class VisitorController {
      */
     @GetMapping("/reviews")
     public ResponseEntity<List<Review>> getAllReviews() {
-        return ResponseEntity.ok(reviewService.getAllReviews());
+        return ResponseEntity.ok(
+                reviewService.getAllReviews().stream()
+                        .filter(Review::isVerified)
+                        .filter(review -> review.getReviewerRole() == ReviewAuthorType.STUDENT)
+                        .toList()
+        );
     }
 
     /**
@@ -142,6 +148,8 @@ public class VisitorController {
     @GetMapping("/reviews/{id}")
     public ResponseEntity<?> getReviewById(@PathVariable Long id) {
         return reviewService.getReviewById(id)
+                .filter(Review::isVerified)
+                .filter(review -> review.getReviewerRole() == ReviewAuthorType.STUDENT)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -154,13 +162,17 @@ public class VisitorController {
         return companyService.getCompanyById(companyId)
                 .map(company -> {
                     Map<String, Object> response = new HashMap<>();
-                    List<Review> reviews = reviewService.getReviewsByCompany(company);
-                    Double avgRating = reviewService.getAverageRatingForCompany(company);
-                    Long count = reviewService.getReviewCountForCompany(company);
+                    List<Review> reviews = reviewService.getReviewsReceivedByCompany(company).stream()
+                            .filter(Review::isVerified)
+                            .toList();
+                    double avgRating = reviews.isEmpty()
+                            ? 0.0
+                            : reviews.stream().mapToInt(Review::getRating).average().orElse(0.0);
+                    long count = reviews.size();
                     
                     response.put("reviews", reviews);
-                    response.put("averageRating", avgRating != null ? avgRating : 0.0);
-                    response.put("count", count != null ? count : 0L);
+                    response.put("averageRating", avgRating);
+                    response.put("count", count);
                     
                     return ResponseEntity.ok(response);
                 })
@@ -173,8 +185,12 @@ public class VisitorController {
     @GetMapping("/reviews/job/{jobId}")
     public ResponseEntity<?> getReviewsByJob(@PathVariable Long jobId) {
         return jobService.getJobById(jobId)
-                .map(job -> ResponseEntity.ok(reviewService.getReviewsByJob(job)))
+                .map(job -> ResponseEntity.ok(
+                        reviewService.getReviewsByJob(job).stream()
+                                .filter(Review::isVerified)
+                                .filter(review -> review.getReviewerRole() == ReviewAuthorType.STUDENT)
+                                .toList()
+                ))
                 .orElse(ResponseEntity.notFound().build());
     }
 }
-

@@ -17,6 +17,20 @@ interface Company {
 }
 
 const companyService = {
+  resolveLogoUrl: (logoUrl?: string) => {
+    if (!logoUrl) {
+      return "";
+    }
+
+    if (/^https?:\/\//i.test(logoUrl)) {
+      return logoUrl;
+    }
+
+    const baseUrl = (api.defaults.baseURL || "").replace(/\/$/, "");
+    const normalizedPath = logoUrl.startsWith("/") ? logoUrl : `/${logoUrl}`;
+    return `${baseUrl}${normalizedPath}`;
+  },
+
   // 获取所有企业（游客接口 - 仅已认证企业）
   getAllCompanies: async () => {
     const response = await api.get<Company[]>('/api/public/companies');
@@ -56,6 +70,17 @@ const companyService = {
   // 更新企业（需要认证）
   updateCompany: async (id: number, companyData: Company) => {
     const response = await api.put<Company>(`/api/companies/${id}`, companyData);
+    return response.data;
+  },
+
+  uploadCompanyLogo: async (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<Company>(`/api/companies/${id}/logo`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
     return response.data;
   },
 

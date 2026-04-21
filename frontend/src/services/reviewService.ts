@@ -11,9 +11,11 @@ interface Review {
   jobTitle?: string;
   anonymous: boolean;
   verified?: boolean;
+  reviewerRole?: "STUDENT" | "EMPLOYER";
   createdAt?: string;
   companyId?: number;
   jobId?: number;
+  studentId?: number;
   company?: {
     id?: number;
     name?: string;
@@ -27,6 +29,20 @@ interface Review {
     id?: number;
     title?: string;
   };
+}
+
+interface ReviewCreateInput {
+  title: string;
+  content: string;
+  rating: number;
+  pros?: string;
+  cons?: string;
+  workPeriod?: string;
+  jobTitle?: string;
+  anonymous: boolean;
+  companyId: number;
+  jobId?: number;
+  studentId?: number;
 }
 
 interface CompanyReviewsResponse {
@@ -62,22 +78,45 @@ const reviewService = {
   
   // 获取当前学生的所有评价
   getMyReviews: async () => {
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    const response = await api.get<Review[]>(`/api/reviews/student/${currentUser.id}`);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('请先登录后查看评价。');
+    }
+
+    const response = await api.get<Review[]>('/api/reviews/me/authored');
+    return response.data;
+  },
+
+  getMyReceivedReviews: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('请先登录后查看评价。');
+    }
+
+    const response = await api.get<Review[]>('/api/reviews/me/received');
+    return response.data;
+  },
+
+  getCompanyAuthoredReviews: async (companyId: number) => {
+    const response = await api.get<Review[]>(`/api/reviews/company/${companyId}/authored`);
     return response.data;
   },
   
   // 创建新评价
-  createReview: async (reviewData: Review) => {
+  createReview: async (reviewData: ReviewCreateInput) => {
     const payload: any = { ...reviewData };
-    if (reviewData.companyId && !reviewData.company) {
+    if (reviewData.companyId) {
       payload.company = { id: reviewData.companyId };
     }
-    if (reviewData.jobId && !reviewData.job) {
+    if (reviewData.jobId) {
       payload.job = { id: reviewData.jobId };
+    }
+    if (reviewData.studentId) {
+      payload.student = { id: reviewData.studentId };
     }
     delete payload.companyId;
     delete payload.jobId;
+    delete payload.studentId;
     const response = await api.post<Review>('/api/reviews', payload);
     return response.data;
   },
@@ -109,4 +148,4 @@ const reviewService = {
 };
 
 export default reviewService;
-export type { Review, CompanyReviewsResponse };
+export type { Review, ReviewCreateInput, CompanyReviewsResponse };

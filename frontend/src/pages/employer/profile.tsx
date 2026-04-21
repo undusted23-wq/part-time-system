@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { BadgeCheckIcon, BuildingIcon, CameraIcon, SaveIcon } from "lucide-react";
+import { BadgeCheckIcon, BuildingIcon, CameraIcon, LoaderCircleIcon, SaveIcon } from "lucide-react";
 import companyService, { Company } from "@/services/companyService";
+import { toast } from "sonner";
 
 export default function EmployerProfile() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -22,6 +23,7 @@ export default function EmployerProfile() {
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,18 +54,30 @@ export default function EmployerProfile() {
   );
 
   useEffect(() => {
-    if (selectedCompany) {
+    if (!selectedCompany) {
       setForm({
-        name: selectedCompany.name || "",
-        description: selectedCompany.description || "",
-        industry: selectedCompany.industry || "",
-        location: selectedCompany.location || "",
-        website: selectedCompany.website || "",
-        logoUrl: selectedCompany.logoUrl || "",
-        contactEmail: selectedCompany.contactEmail || "",
-        contactPhone: selectedCompany.contactPhone || ""
+        name: "",
+        description: "",
+        industry: "",
+        location: "",
+        website: "",
+        logoUrl: "",
+        contactEmail: "",
+        contactPhone: ""
       });
+      return;
     }
+
+    setForm({
+      name: selectedCompany.name || "",
+      description: selectedCompany.description || "",
+      industry: selectedCompany.industry || "",
+      location: selectedCompany.location || "",
+      website: selectedCompany.website || "",
+      logoUrl: selectedCompany.logoUrl || "",
+      contactEmail: selectedCompany.contactEmail || "",
+      contactPhone: selectedCompany.contactPhone || ""
+    });
   }, [selectedCompany]);
 
   const handleChange = (key: keyof typeof form, value: string) => {
@@ -82,12 +96,44 @@ export default function EmployerProfile() {
         name: form.name
       });
       setCompanies((prev) => prev.map((item) => (item.id === selectedCompany.id ? updated : item)));
-      alert("保存成功！");
+      toast.success("保存成功");
     } catch (error) {
       console.error("Failed to update company:", error);
-      alert("保存失败，请稍后再试。");
+      toast.error("保存失败，请稍后再试。");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file || !selectedCompany?.id) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("请上传图片格式的企业 Logo。");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Logo 文件不能超过 2MB。");
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const updated = await companyService.uploadCompanyLogo(selectedCompany.id, file);
+      setCompanies((prev) => prev.map((item) => (item.id === selectedCompany.id ? updated : item)));
+      setForm((prev) => ({ ...prev, logoUrl: updated.logoUrl || "" }));
+      toast.success("企业 Logo 已更新");
+    } catch (error) {
+      console.error("Failed to upload company logo:", error);
+      toast.error("上传 Logo 失败，请稍后再试。");
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
@@ -114,14 +160,31 @@ export default function EmployerProfile() {
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <img
-                  src={selectedCompany?.logoUrl || "/placeholder-company-logo.jpg"}
+                  src={companyService.resolveLogoUrl(selectedCompany?.logoUrl) || "/placeholder-company-logo.jpg"}
                   alt="企业logo"
                   className="w-32 h-32 rounded-lg object-cover border-4 border-blue-100"
                 />
-                <Button variant="secondary" size="icon" className="absolute bottom-0 right-0 rounded-full" disabled>
-                  <CameraIcon className="h-4 w-4" />
-                  <span className="sr-only">更换企业logo</span>
-                </Button>
+                <label className="absolute bottom-0 right-0">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                    disabled={uploadingLogo || saving || loading || !selectedCompany?.id}
+                  />
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="rounded-full"
+                    disabled={uploadingLogo || saving || loading || !selectedCompany?.id}
+                    asChild
+                  >
+                    <span>
+                      {uploadingLogo ? <LoaderCircleIcon className="h-4 w-4 animate-spin" /> : <CameraIcon className="h-4 w-4" />}
+                      <span className="sr-only">更换企业logo</span>
+                    </span>
+                  </Button>
+                </label>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1">
@@ -194,17 +257,6 @@ export default function EmployerProfile() {
                   id="website"
                   value={form.website}
                   onChange={(e) => handleChange("website", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="logoUrl">Logo 地址</Label>
-                <Input
-                  id="logoUrl"
-                  value={form.logoUrl}
-                  onChange={(e) => handleChange("logoUrl", e.target.value)}
                 />
               </div>
             </div>

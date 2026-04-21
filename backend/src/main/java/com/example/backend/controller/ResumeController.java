@@ -19,6 +19,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
@@ -28,6 +29,7 @@ import com.example.backend.model.Education;
 import com.example.backend.model.WorkExperience;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/resumes")
@@ -177,7 +179,7 @@ public class ResumeController {
     @Autowired
     private ResumeRepository resumeRepository;
     
-    private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
+    private final Path fileStorageLocation = Paths.get("uploads", "resumes").toAbsolutePath().normalize();
 
     // 构造函数中初始化文件夹（如果你的Controller已经有构造函数，加在里面；没有就加这个代码块）
     {
@@ -196,18 +198,37 @@ public class ResumeController {
     public ResponseEntity<?> uploadResumeFile(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         return resumeService.getResumeById(id).map(resume -> {
             try {
-                // 生成文件名: resume_101_filename.pdf
-                String fileName = "resume_" + id + "_" + file.getOriginalFilename();
-                Path targetLocation = fileStorageLocation.resolve(fileName);
+                if (file.isEmpty()) {
+                    return ResponseEntity.badRequest()
+                            .body(new ApiResponse(false, "请选择要上传的简历文件"));
+                }
+
+                String contentType = file.getContentType();
+                String originalName = Objects.requireNonNullElse(file.getOriginalFilename(), "resume.pdf");
+                String lowerName = originalName.toLowerCase();
+                boolean isPdf = "application/pdf".equalsIgnoreCase(contentType) || lowerName.endsWith(".pdf");
+                if (!isPdf) {
+                    return ResponseEntity.badRequest()
+                            .body(new ApiResponse(false, "当前仅支持上传 PDF 简历，便于系统在线预览"));
+                }
+
+                String sanitizedName = Paths.get(originalName).getFileName().toString().replaceAll("[^a-zA-Z0-9._-]", "_");
+                String fileName = "resume_" + id + "_" + sanitizedName;
+                Path targetLocation = fileStorageLocation.resolve(fileName).normalize();
+                if (!targetLocation.startsWith(fileStorageLocation)) {
+                    return ResponseEntity.badRequest()
+                            .body(new ApiResponse(false, "非法的文件路径"));
+                }
                 
                 // 保存文件
                 Files.copy(file.getInputStream(), targetLocation, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 
                 // 更新数据库
                 resume.setResumeFilePath(fileName);
-                resumeRepository.save(resume); // 这里直接调用Repo保存
+                resume.setFileUrl("/uploads/resumes/" + fileName);
+                Resume savedResume = resumeRepository.save(resume); // 这里直接调用Repo保存
                 
-                return ResponseEntity.ok(new ApiResponse(true, "Upload successful: " + fileName));
+                return ResponseEntity.ok(savedResume);
             } catch (Exception e) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(new ApiResponse(false, "Upload failed: " + e.getMessage()));
@@ -225,16 +246,22 @@ public class ResumeController {
         var resumeOpt = resumeService.getResumeById(id);
         if (resumeOpt.isEmpty()) return ResponseEntity.notFound().build();
         
-        String fileName = resumeOpt.get().getResumeFilePath();
-        if (fileName == null) return ResponseEntity.notFound().build();
+        Resume resume = resumeOpt.get();
+        String fileName = resume.getResumeFilePath();
+        if ((fileName == null || fileName.isBlank()) && resume.getFileUrl() != null && resume.getFileUrl().startsWith("/uploads/resumes/")) {
+            fileName = resume.getFileUrl().substring("/uploads/resumes/".length());
+        }
+        if (fileName == null || fileName.isBlank()) return ResponseEntity.notFound().build();
 
         try {
             Path filePath = fileStorageLocation.resolve(fileName).normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists()) {
+                MediaType mediaType = MediaTypeFactory.getMediaType(resource)
+                        .orElse(MediaType.APPLICATION_OCTET_STREAM);
                 return ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_PDF)
+                        .contentType(mediaType)
                         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                         .body(resource);
             }

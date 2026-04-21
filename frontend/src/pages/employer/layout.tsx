@@ -11,6 +11,7 @@ import {
   LogOutIcon,
   MessagesSquareIcon,
   PlusCircleIcon,
+  StarIcon,
   UsersIcon
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -83,6 +84,15 @@ export default function EmployerLayout() {
                 <UsersIcon className="h-4 w-4" />
               </div>
               <span>申请记录</span>
+            </Link>
+          </Button>
+          <Button variant="ghost" className="justify-start gap-2 hover:bg-blue-200" asChild>
+            <Link to="/employer/reviews" className="relative group">
+              <span className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-100 text-amber-800 mr-2">
+                <StarIcon className="h-4 w-4" />
+              </div>
+              <span>评价管理</span>
             </Link>
           </Button>
           <Button variant="ghost" className="justify-start gap-2 hover:bg-blue-200" asChild>

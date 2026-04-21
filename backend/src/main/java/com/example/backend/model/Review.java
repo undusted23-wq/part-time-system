@@ -47,6 +47,10 @@ public class Review {
     
     @Column(name = "job_title")
     private String jobTitle;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reviewer_role")
+    private ReviewAuthorType reviewerRole = ReviewAuthorType.STUDENT;
     
     @Column(name = "is_verified")
     private boolean isVerified = false;

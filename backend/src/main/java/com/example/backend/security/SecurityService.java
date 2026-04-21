@@ -5,6 +5,7 @@ import com.example.backend.model.Job;
 import com.example.backend.model.JobApplication;
 import com.example.backend.model.Message;
 import com.example.backend.model.Review;
+import com.example.backend.model.ReviewAuthorType;
 import com.example.backend.model.Resume;
 import com.example.backend.model.SavedJob;
 import com.example.backend.model.User;
@@ -71,7 +72,13 @@ public class SecurityService {
 
     public boolean isReviewOwner(Long reviewId, String username) {
         return getReview(reviewId)
-                .map(review -> isOwnerUsername(review.getStudent(), username))
+                .map(review -> {
+                    if (review.getReviewerRole() == ReviewAuthorType.EMPLOYER) {
+                        return review.getCompany() != null
+                                && isOwnerUsername(review.getCompany().getEmployer(), username);
+                    }
+                    return isOwnerUsername(review.getStudent(), username);
+                })
                 .orElse(false);
     }
 

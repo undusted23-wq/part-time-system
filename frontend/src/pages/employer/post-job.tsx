@@ -82,7 +82,7 @@ export default function PostJob() {
         companyId: Number(jobData.companyId),
         applicationDeadline: deadlineDate ? deadlineDate.toISOString() : undefined
       });
-      toast.success("职位发布成功！");
+      toast.success("职位已提交审核，管理员通过后会自动对外展示。");
       // Navigate to jobs list after successful creation
       navigate("/employer/jobs");
     } catch (error) {

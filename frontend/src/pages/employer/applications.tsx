@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,14 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { SearchIcon, CheckIcon, XIcon, MessageSquareIcon, UserIcon, FileTextIcon } from "lucide-react";
+import { SearchIcon, CheckIcon, XIcon, MessageSquareIcon, UserIcon, FileTextIcon, StarIcon } from "lucide-react";
 import applicationService, { JobApplication } from "@/services/applicationService";
 import companyService from "@/services/companyService";
 import jobService, { Job } from "@/services/jobService";
 import messageService from "@/services/messageService";
 import { toast } from "sonner";
 
+const reviewEligibleStatuses = new Set(["INTERVIEW", "OFFERED", "ACCEPTED", "REJECTED"]);
+
 export default function Applications() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [jobFilter, setJobFilter] = useState("all");
@@ -47,7 +51,9 @@ export default function Applications() {
     try {
       const companies = await companyService.getEmployerCompanies();
       const jobLists = await Promise.all(
-        (companies || []).map((company) => jobService.getJobsByCompany(company.id))
+        (companies || [])
+          .filter((company) => company.id)
+          .map((company) => jobService.getJobsByCompany(company.id as number))
       );
       const employerJobs = jobLists.flat();
       setJobs(employerJobs);
@@ -166,6 +172,15 @@ export default function Applications() {
     }
   };
 
+  const handleReviewStudent = (application: JobApplication) => {
+    if (!application.id) {
+      toast.error("当前申请记录无法发起评价。");
+      return;
+    }
+
+    navigate(`/employer/reviews?applicationId=${application.id}`);
+  };
+
   return (
     <div className="grid gap-6">
       <div className="flex justify-between items-center">
@@ -278,6 +293,12 @@ export default function Applications() {
                   )}
 
                   <div className="flex flex-wrap justify-end gap-2">
+                    {reviewEligibleStatuses.has(status) && (
+                      <Button variant="outline" className="gap-1" size="sm" onClick={() => handleReviewStudent(application)}>
+                        <StarIcon className="h-4 w-4 text-amber-500" />
+                        评价学生
+                      </Button>
+                    )}
                     {(status === "PENDING" || status === "REVIEWING" || status === "SHORTLISTED") && (
                       <>
                         <Button variant="outline" className="gap-1" size="sm" onClick={() => updateStatus(application, "INTERVIEW")}

@@ -122,7 +122,7 @@ export default function JobsList() {
     try {
       const updated = await jobService.updateJobStatus(job.id, !job.active);
       setJobs((prev) => prev.map((item) => (item.id === job.id ? { ...item, ...updated } : item)));
-      toast.success(job.active ? "职位已下线" : "职位已重新发布");
+      toast.success(job.active ? "职位已下线" : "状态已更新");
     } catch (error) {
       console.error("Failed to update job status:", error);
       toast.error("更新状态失败，请稍后再试。");
@@ -182,8 +182,8 @@ export default function JobsList() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">所有状态</SelectItem>
-            <SelectItem value="active">正在招聘</SelectItem>
-            <SelectItem value="inactive">已下线</SelectItem>
+            <SelectItem value="active">已发布</SelectItem>
+            <SelectItem value="inactive">待审核/已下线</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -210,10 +210,10 @@ export default function JobsList() {
                   className={
                     job.active
                       ? "bg-green-100 text-green-800 hover:bg-green-100"
-                      : "bg-gray-100 text-gray-800 hover:bg-gray-100"
+                      : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
                   }
                 >
-                  {job.active ? "正在招聘" : "已下线"}
+                  {job.active ? "已发布" : "待审核/已下线"}
                 </Badge>
               </div>
             </CardHeader>
@@ -243,15 +243,22 @@ export default function JobsList() {
                   查看申请
                 </Link>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                onClick={() => handleToggleJob(job)}
-              >
-                <PencilIcon className="h-4 w-4" />
-                {job.active ? "下线" : "重新发布"}
-              </Button>
+              {job.active ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => handleToggleJob(job)}
+                >
+                  <PencilIcon className="h-4 w-4" />
+                  下线
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" className="gap-1" disabled>
+                  <PencilIcon className="h-4 w-4" />
+                  等待审核
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"

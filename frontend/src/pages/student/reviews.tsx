@@ -1,30 +1,35 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StarIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import ReviewForm from "@/components/review/ReviewForm";
 import reviewService, { Review } from "@/services/reviewService";
 
 export default function Reviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [receivedReviews, setReceivedReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchReviews = async () => {
-      setLoading(true);
-      setErrorMessage(null);
-      try {
-        const data = await reviewService.getMyReviews();
-        setReviews(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Failed to load reviews:", error);
-        setErrorMessage("加载评价失败，请稍后再试。");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadReviews = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const [authored, received] = await Promise.all([
+        reviewService.getMyReviews(),
+        reviewService.getMyReceivedReviews()
+      ]);
+      setReviews(Array.isArray(authored) ? authored : []);
+      setReceivedReviews(Array.isArray(received) ? received : []);
+    } catch (error) {
+      console.error("Failed to load reviews:", error);
+      setErrorMessage(error instanceof Error ? error.message : "加载评价失败，请稍后再试。");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchReviews();
+  useEffect(() => {
+    loadReviews();
   }, []);
 
   const averageRating = useMemo(() => {
@@ -37,6 +42,13 @@ export default function Reviews() {
   return (
     <div className="grid gap-6">
       <h1 className="text-2xl font-bold">我的评价</h1>
+
+      <ReviewForm
+        title="提交评价"
+        description="填写兼职体验并直接提交到系统，成功后会立即更新下方历史记录。"
+        submitLabel="提交评价"
+        onSuccess={loadReviews}
+      />
 
       <div className="grid gap-4">
         <Card>
@@ -122,6 +134,49 @@ export default function Reviews() {
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>企业给我的评价</CardTitle>
+            <CardDescription>来自企业端的信用反馈</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {receivedReviews.length === 0 ? (
+              <p className="text-sm text-muted-foreground">暂无企业评价</p>
+            ) : (
+              receivedReviews.map((review) => (
+                <Card key={`received-${review.id}`}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle>{review.jobTitle || review.job?.title || "企业评价"}</CardTitle>
+                        <CardDescription>
+                          {review.company?.name || "未知企业"} · {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : "-"}
+                        </CardDescription>
+                      </div>
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <StarIcon
+                            key={star}
+                            className={`h-4 w-4 ${star <= review.rating ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{review.content}</p>
+                    {review.verified !== undefined && (
+                      <div className="mt-4 text-xs text-muted-foreground">
+                        {review.verified ? "已审核" : "待审核"}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
