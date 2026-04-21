@@ -21,6 +21,11 @@ interface UpdateProfileData {
 }
 
 const userService = {
+  getCurrentUser: async () => {
+    const response = await api.get<UserProfile>('/api/users/me');
+    return response.data;
+  },
+
   getAllUsers: async () => {
     const response = await api.get<UserProfile[]>('/api/users');
     return response.data;

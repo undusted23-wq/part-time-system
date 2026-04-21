@@ -123,7 +123,7 @@ export default function VisitorCompanies() {
                     <div className="flex items-center gap-2">
                       {company.logoUrl ? (
                         <img
-                          src={company.logoUrl}
+                          src={companyService.resolveLogoUrl(company.logoUrl)}
                           alt={company.name}
                           className="h-12 w-12 rounded-lg object-cover"
                         />

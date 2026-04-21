@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 const eligibleStatuses = new Set(["INTERVIEW", "OFFERED", "ACCEPTED", "REJECTED"]);
 
 export default function EmployerReviews() {
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [receivedReviews, setReceivedReviews] = useState<Review[]>([]);
   const [writtenReviews, setWrittenReviews] = useState<Review[]>([]);
@@ -82,6 +84,28 @@ export default function EmployerReviews() {
   const selectedApplication = eligibleApplications.find(
     (application) => application.id?.toString() === selectedApplicationId
   );
+  const requestedApplicationId = searchParams.get("applicationId");
+
+  useEffect(() => {
+    if (!eligibleApplications.length) {
+      return;
+    }
+
+    if (requestedApplicationId) {
+      const matchedApplication = eligibleApplications.find(
+        (application) => application.id?.toString() === requestedApplicationId
+      );
+
+      if (matchedApplication) {
+        setSelectedApplicationId(requestedApplicationId);
+        return;
+      }
+    }
+
+    if (!selectedApplicationId) {
+      setSelectedApplicationId(eligibleApplications[0].id?.toString() || "");
+    }
+  }, [eligibleApplications, requestedApplicationId, selectedApplicationId]);
 
   const averageRating = useMemo(() => {
     if (receivedReviews.length === 0) {
@@ -204,6 +228,12 @@ export default function EmployerReviews() {
           <CardDescription>对已进入后续流程的学生补充信用评价，提交后需要管理员审核。</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
+          {requestedApplicationId && !selectedApplication && eligibleApplications.length > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              当前申请暂不可评价，已为您切换到其他可评价学生。
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>选择学生</Label>

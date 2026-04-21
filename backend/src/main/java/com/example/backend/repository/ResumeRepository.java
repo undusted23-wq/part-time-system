@@ -10,7 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface ResumeRepository extends JpaRepository<Resume, Long> {
-    List<Resume> findByStudent(User student);
+    List<Resume> findByStudentOrderByIdDesc(User student);
     List<Resume> findByStudentAndIsActiveTrue(User student);
     Optional<Resume> findFirstByStudentAndIsDefaultTrueOrderByUpdatedAtDesc(User student);
+    Optional<Resume> findFirstByStudentAndIsActiveTrueOrderByIdDesc(User student);
 }

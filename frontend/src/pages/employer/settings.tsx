@@ -4,19 +4,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Building2Icon, LoaderCircleIcon, UploadIcon } from "lucide-react";
+import companyService, { Company } from "@/services/companyService";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 export default function Settings() {
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [companyData, setCompanyData] = useState({
-    name: "科技创新有限公司",
-    industry: "互联网/IT",
-    size: "50-200人",
-    website: "www.techcompany.com",
-    email: "hr@techcompany.com",
-    phone: "010-12345678",
-    address: "北京市海淀区中关村软件园",
-    description: "我们是一家专注于人工智能和数据分析的科技公司，致力于为企业提供智能化解决方案。"
+    name: "",
+    industry: "",
+    website: "",
+    email: "",
+    phone: "",
+    address: "",
+    description: "",
+    logoUrl: ""
   });
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
+  const [loadingCompany, setLoadingCompany] = useState(false);
+  const [savingCompany, setSavingCompany] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [companyError, setCompanyError] = useState<string | null>(null);
 
   const [notificationSettings, setNotificationSettings] = useState({
     newApplications: true,
@@ -31,6 +42,70 @@ export default function Settings() {
     confirmPassword: ""
   });
 
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+
+  const selectedCompany = useMemo(
+    () => companies.find((company) => company.id === selectedCompanyId) || null,
+    [companies, selectedCompanyId]
+  );
+
+  useEffect(() => {
+    const loadCompanies = async () => {
+      setLoadingCompany(true);
+      setCompanyError(null);
+      try {
+        const data = await companyService.getEmployerCompanies();
+        const list = Array.isArray(data) ? data : [];
+        setCompanies(list);
+        setSelectedCompanyId(list[0]?.id || null);
+      } catch (error) {
+        console.error("Failed to load employer companies:", error);
+        setCompanyError("加载企业信息失败，请稍后再试。");
+      } finally {
+        setLoadingCompany(false);
+      }
+    };
+
+    loadCompanies();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCompany) {
+      setCompanyData({
+        name: "",
+        industry: "",
+        website: "",
+        email: "",
+        phone: "",
+        address: "",
+        description: "",
+        logoUrl: ""
+      });
+      setLogoPreviewUrl("");
+      return;
+    }
+
+    setCompanyData({
+      name: selectedCompany.name || "",
+      industry: selectedCompany.industry || "",
+      website: selectedCompany.website || "",
+      email: selectedCompany.contactEmail || "",
+      phone: selectedCompany.contactPhone || "",
+      address: selectedCompany.location || "",
+      description: selectedCompany.description || "",
+      logoUrl: selectedCompany.logoUrl || ""
+    });
+    setLogoPreviewUrl(companyService.resolveLogoUrl(selectedCompany.logoUrl));
+  }, [selectedCompany]);
+
+  useEffect(() => {
+    return () => {
+      if (logoPreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(logoPreviewUrl);
+      }
+    };
+  }, [logoPreviewUrl]);
+
   const handleCompanyDataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setCompanyData(prev => ({ ...prev, [name]: value }));
@@ -43,6 +118,85 @@ export default function Settings() {
 
   const handleNotificationChange = (name: string) => {
     setNotificationSettings(prev => ({ ...prev, [name]: !prev[name as keyof typeof notificationSettings] }));
+  };
+
+  const handleSaveCompany = async () => {
+    if (!selectedCompany?.id) {
+      toast.error("请先创建企业后再设置资料。");
+      return;
+    }
+
+    setSavingCompany(true);
+    try {
+      const updated = await companyService.updateCompany(selectedCompany.id, {
+        ...selectedCompany,
+        name: companyData.name.trim(),
+        industry: companyData.industry.trim() || undefined,
+        website: companyData.website.trim() || undefined,
+        contactEmail: companyData.email.trim() || undefined,
+        contactPhone: companyData.phone.trim() || undefined,
+        location: companyData.address.trim() || undefined,
+        description: companyData.description.trim() || undefined,
+        logoUrl: companyData.logoUrl || undefined
+      });
+
+      setCompanies((prev) => prev.map((company) => (company.id === updated.id ? updated : company)));
+      setCompanyData((prev) => ({ ...prev, logoUrl: updated.logoUrl || "" }));
+      setLogoPreviewUrl(companyService.resolveLogoUrl(updated.logoUrl));
+      toast.success("企业资料已保存");
+    } catch (error) {
+      console.error("Failed to save company settings:", error);
+      toast.error("保存企业资料失败，请稍后再试。");
+    } finally {
+      setSavingCompany(false);
+    }
+  };
+
+  const handleLogoButtonClick = () => {
+    logoInputRef.current?.click();
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file || !selectedCompany?.id) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("请上传 JPG、PNG、WebP 等图片文件。");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Logo 文件不能超过 2MB。");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    if (logoPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(logoPreviewUrl);
+    }
+    setLogoPreviewUrl(previewUrl);
+    setUploadingLogo(true);
+
+    try {
+      const updated = await companyService.uploadCompanyLogo(selectedCompany.id, file);
+      setCompanies((prev) => prev.map((company) => (company.id === updated.id ? updated : company)));
+      setCompanyData((prev) => ({ ...prev, logoUrl: updated.logoUrl || "" }));
+
+      URL.revokeObjectURL(previewUrl);
+      setLogoPreviewUrl(companyService.resolveLogoUrl(updated.logoUrl));
+      toast.success("企业 Logo 上传成功");
+    } catch (error) {
+      console.error("Failed to upload company logo:", error);
+      URL.revokeObjectURL(previewUrl);
+      setLogoPreviewUrl(companyService.resolveLogoUrl(companyData.logoUrl));
+      toast.error("上传 Logo 失败，请稍后再试。");
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   return (
@@ -65,6 +219,68 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {companyError && (
+                <div className="text-sm text-red-500">{companyError}</div>
+              )}
+
+              <div className="grid gap-4 md:grid-cols-[1fr_240px]">
+                <div className="space-y-2">
+                  <Label htmlFor="companySelector">选择企业</Label>
+                  <select
+                    id="companySelector"
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2"
+                    value={selectedCompanyId || ""}
+                    onChange={(e) => setSelectedCompanyId(Number(e.target.value) || null)}
+                    disabled={loadingCompany || savingCompany || uploadingLogo}
+                  >
+                    <option value="">请选择企业</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>企业 Logo</Label>
+                  <div className="border rounded-lg p-4 flex flex-col items-center justify-center gap-3 min-h-[180px]">
+                    {logoPreviewUrl ? (
+                      <img
+                        src={logoPreviewUrl}
+                        alt="企业 Logo 预览"
+                        className="w-20 h-20 rounded-xl object-cover border"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 bg-muted rounded-xl flex items-center justify-center">
+                        <Building2Icon className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      className="hidden"
+                      onChange={handleLogoUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLogoButtonClick}
+                      disabled={!selectedCompanyId || loadingCompany || savingCompany || uploadingLogo}
+                    >
+                      {uploadingLogo ? <LoaderCircleIcon className="h-4 w-4 mr-2 animate-spin" /> : <UploadIcon className="h-4 w-4 mr-2" />}
+                      {uploadingLogo ? "上传中..." : "上传 Logo"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      支持 JPG、PNG、WebP，最大 2MB
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">企业名称</Label>
@@ -73,6 +289,7 @@ export default function Settings() {
                     name="name"
                     value={companyData.name} 
                     onChange={handleCompanyDataChange}
+                    disabled={loadingCompany || !selectedCompanyId}
                   />
                 </div>
                 <div className="space-y-2">
@@ -82,15 +299,17 @@ export default function Settings() {
                     name="industry"
                     value={companyData.industry} 
                     onChange={handleCompanyDataChange}
+                    disabled={loadingCompany || !selectedCompanyId}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="size">企业规模</Label>
+                  <Label htmlFor="address">办公地点</Label>
                   <Input 
-                    id="size" 
-                    name="size"
-                    value={companyData.size} 
+                    id="address" 
+                    name="address"
+                    value={companyData.address} 
                     onChange={handleCompanyDataChange}
+                    disabled={loadingCompany || !selectedCompanyId}
                   />
                 </div>
                 <div className="space-y-2">
@@ -100,6 +319,7 @@ export default function Settings() {
                     name="website"
                     value={companyData.website} 
                     onChange={handleCompanyDataChange}
+                    disabled={loadingCompany || !selectedCompanyId}
                   />
                 </div>
                 <div className="space-y-2">
@@ -110,6 +330,7 @@ export default function Settings() {
                     type="email"
                     value={companyData.email} 
                     onChange={handleCompanyDataChange}
+                    disabled={loadingCompany || !selectedCompanyId}
                   />
                 </div>
                 <div className="space-y-2">
@@ -119,46 +340,27 @@ export default function Settings() {
                     name="phone"
                     value={companyData.phone} 
                     onChange={handleCompanyDataChange}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="address">公司地址</Label>
-                  <Input 
-                    id="address" 
-                    name="address"
-                    value={companyData.address} 
-                    onChange={handleCompanyDataChange}
+                    disabled={loadingCompany || !selectedCompanyId}
                   />
                 </div>
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="description">公司介绍</Label>
-                <textarea 
+                <Textarea 
                   id="description" 
                   name="description"
                   rows={5} 
                   value={companyData.description} 
                   onChange={handleCompanyDataChange}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  disabled={loadingCompany || !selectedCompanyId}
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label>企业Logo</Label>
-                <div className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center">
-                  <div className="w-20 h-20 bg-muted rounded flex items-center justify-center mb-4">
-                    <span className="text-2xl text-muted-foreground">Logo</span>
-                  </div>
-                  <Button variant="outline" size="sm">上传Logo</Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    支持JPG、PNG格式，最大2MB
-                  </p>
-                </div>
-              </div>
-              
               <div className="flex justify-end">
-                <Button>保存更改</Button>
+                <Button onClick={handleSaveCompany} disabled={!selectedCompanyId || loadingCompany || savingCompany || uploadingLogo}>
+                  {savingCompany ? "保存中..." : "保存更改"}
+                </Button>
               </div>
             </CardContent>
           </Card>
