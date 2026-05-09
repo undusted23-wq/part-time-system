@@ -16,10 +16,49 @@ import {
   ServerIcon,
   ShieldIcon
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export default function SystemManagement() {
   const [tabIndex, setTabIndex] = useState(0);
+  const [themeColor, setThemeColor] = useState(() => {
+    return localStorage.getItem("theme-primary") || "#3b82f6";
+  });
+
+  const applyThemeColor = useCallback((hex: string) => {
+    // Convert hex to HSL
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    const hDeg = Math.round(h * 360);
+    const sPct = Math.round(s * 100);
+    const lPct = Math.round(l * 100);
+
+    const root = document.documentElement;
+    root.style.setProperty("--primary", `hsl(${hDeg}, ${sPct}%, ${lPct}%)`);
+    root.style.setProperty("--ring", `hsl(${hDeg}, ${sPct}%, ${Math.min(lPct + 20, 80)}%)`);
+    root.style.setProperty("--sidebar-primary", `hsl(${hDeg}, ${sPct}%, ${lPct}%)`);
+    root.style.setProperty("--sidebar-ring", `hsl(${hDeg}, ${sPct}%, ${Math.min(lPct + 20, 80)}%)`);
+    localStorage.setItem("theme-primary", hex);
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme-primary");
+    if (saved) {
+      applyThemeColor(saved);
+    }
+  }, [applyThemeColor]);
   
   return (
     <div className="grid gap-6">
@@ -395,10 +434,37 @@ export default function SystemManagement() {
                     <div className="flex gap-2">
                       <input 
                         type="color" 
-                        defaultValue="#3b82f6" 
-                        className="w-10 h-10 rounded cursor-pointer"
+                        value={themeColor}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setThemeColor(val);
+                          applyThemeColor(val);
+                        }}
+                        className="w-10 h-10 rounded cursor-pointer border"
                       />
-                      <Input defaultValue="#3b82f6" className="flex-1" />
+                      <Input 
+                        value={themeColor}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setThemeColor(val);
+                          if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+                            applyThemeColor(val);
+                          }
+                        }}
+                        className="flex-1"
+                        maxLength={7}
+                      />
+                    </div>
+                    <div className="flex gap-2 mt-1">
+                      {["#3b82f6","#10b981","#8b5cf6","#f59e0b","#ef4444","#ec4899","#6366f1"].map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          className={`w-6 h-6 rounded-full border-2 transition-all ${themeColor === c ? 'border-foreground scale-110' : 'border-transparent hover:scale-110'}`}
+                          style={{ backgroundColor: c }}
+                          onClick={() => { setThemeColor(c); applyThemeColor(c); }}
+                        />
+                      ))}
                     </div>
                   </div>
 
