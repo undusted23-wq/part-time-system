@@ -95,6 +95,11 @@ export default function Messages() {
     try {
       const data = await messageService.getConversation(userId);
       const list = Array.isArray(data) ? data : [];
+      list.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeA - timeB;
+      });
       setMessages(list);
       if (currentUserId) {
         const unreadIds = list

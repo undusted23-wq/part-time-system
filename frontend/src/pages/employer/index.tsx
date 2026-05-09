@@ -9,10 +9,23 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 export default function EmployerDashboard() {
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [applications, setApplications] = useState(recentApplications);
 
   const handleViewDetails = (application: any) => {
     setSelectedApplication(application);
     setIsDialogOpen(true);
+  };
+
+  const handleApprove = () => {
+    if (!selectedApplication) return;
+    setApplications(prev => prev.map(a => a.id === selectedApplication.id ? { ...a, status: "已通过" } : a));
+    setSelectedApplication({ ...selectedApplication, status: "已通过" });
+  };
+
+  const handleReject = () => {
+    if (!selectedApplication) return;
+    setApplications(prev => prev.map(a => a.id === selectedApplication.id ? { ...a, status: "已拒绝" } : a));
+    setSelectedApplication({ ...selectedApplication, status: "已拒绝" });
   };
 
   return (
@@ -64,7 +77,7 @@ export default function EmployerDashboard() {
 
       <h2 className="mt-4 text-xl font-semibold">最近收到的申请</h2>
       <div className="grid gap-4">
-        {recentApplications.map(application => (
+        {applications.map(application => (
           <Card key={application.id}>
             <CardHeader>
               <div className="flex justify-between">
@@ -230,8 +243,8 @@ export default function EmployerDashboard() {
               {/* 操作按钮 */}
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>关闭</Button>
-                <Button variant="destructive">拒绝</Button>
-                <Button>通过</Button>
+                <Button variant="destructive" onClick={handleReject}>拒绝</Button>
+                <Button onClick={handleApprove}>通过</Button>
               </div>
             </div>
           )}

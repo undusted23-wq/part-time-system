@@ -35,7 +35,7 @@ export default defineConfig(async () => ({
     },
     proxy: {
       '/ai': {
-        target: 'https://integrate.api.nvidia.com',
+        target: 'https://token-plan-cn.xiaomimimo.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/ai/, '')
       }

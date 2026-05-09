@@ -50,7 +50,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<Message> getConversation(User user1, User user2) {
         return messageRepository.findBySenderAndReceiverOrReceiverAndSenderOrderByCreatedAtDesc(
-                user1, user2, user2, user1);
+                user1, user2, user1, user2);
     }
 
     @Override
